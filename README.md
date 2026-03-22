@@ -6,7 +6,7 @@ The project includes an interactive prototype created in Figma as well as a fron
 
 ## Prototype (Figma)
 You can explore the UI/UX prototype here:  
-https://www.figma.com/design/3BZLHzES0eBRvEAKZJOD2f/MobileApp_DAvai?m=auto&t=S4PiAzQnkLUjlu1B-1
+https://www.figma.com/design/3BZLHzES0eBRvEAKZJOD2f
 
 ## Technologies
 - Angular (Frontend Framework)
