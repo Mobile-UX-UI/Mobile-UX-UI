@@ -1,0 +1,135 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: #f4f4f4;
+}
+
+.login-page {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 24px 40px;
+  background: #f4f4f4;
+}
+
+.brand {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+
+  width: 84px;
+  height: 84px;
+  border: 2px solid #1f1f1f;
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f1f1f;
+  background: transparent;
+}
+
+.brand span {
+  font-weight: 400;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-wrapper {
+  margin-bottom: 36px;
+}
+
+.avatar-circle {
+  width: 92px;
+  height: 92px;
+  border: 2px solid #1f1f1f;
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.avatar-circle mat-icon {
+  font-size: 46px;
+  width: 46px;
+  height: 46px;
+  color: #1f1f1f;
+}
+
+.login-form {
+  width: 100%;
+}
+
+.field-group {
+  margin-bottom: 8px;
+}
+
+.field-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 15px;
+  color: #1f1f1f;
+  text-transform: lowercase;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.login-button {
+  display: block;
+  margin: 20px auto 24px;
+  min-width: 96px;
+  height: 40px;
+  border-radius: 24px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.register-text {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #111;
+}
+
+.register-text a {
+  color: #111;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  margin-top: 2px;
+}
+
+::ng-deep .mdc-notched-outline__leading,
+::ng-deep .mdc-notched-outline__notch,
+::ng-deep .mdc-notched-outline__trailing {
+  border-color: #d8d8d8 !important;
+}
+
+::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: #ffffff !important;
+  border-radius: 8px !important;
+}
+
+::ng-deep .mat-mdc-form-field-infix {
+  min-height: 50px;
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}

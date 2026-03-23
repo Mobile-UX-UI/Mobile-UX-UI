@@ -1,0 +1,69 @@
+<div class="login-page">
+  <div class="brand">DA<span>vai</span></div>
+
+  <div class="login-card">
+    <div class="avatar-wrapper">
+      <div class="avatar-circle">
+        <mat-icon>person</mat-icon>
+      </div>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="field-group">
+        <label for="email">email</label>
+        <mat-form-field appearance="outline" class="full-width">
+          <input
+            matInput
+            id="email"
+            type="email"
+            placeholder="Solo field"
+            formControlName="email"
+          />
+          <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+            Email is required
+          </mat-error>
+          <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+            Enter a valid email
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="field-group">
+        <label for="password">password</label>
+        <mat-form-field appearance="outline" class="full-width">
+          <input
+            matInput
+            id="password"
+            [type]="hidePassword ? 'password' : 'text'"
+            placeholder="Solo field"
+            formControlName="password"
+          />
+          <button
+            type="button"
+            mat-icon-button
+            matSuffix
+            (click)="hidePassword = !hidePassword"
+            [attr.aria-label]="'Toggle password visibility'"
+          >
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+            Password is required
+          </mat-error>
+          <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
+            Minimum 6 characters
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <button mat-flat-button class="login-button" type="submit">
+        LOGIN
+      </button>
+
+      <p class="register-text">
+  NO ACCOUNT?
+  <span class="link" (click)="goToRegister()">REGISTER</span>
+</p>
+    </form>
+  </div>
+</div>

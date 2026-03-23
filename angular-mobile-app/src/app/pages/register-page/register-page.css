@@ -1,0 +1,65 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: #f4f4f4;
+}
+
+.register-page {
+  position: relative;
+  padding: 24px;
+}
+
+.brand {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+
+  width: 70px;
+  height: 70px;
+  border: 2px solid black;
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-weight: bold;
+}
+
+.brand span {
+  font-weight: normal;
+}
+
+.form {
+  margin-top: 120px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.full {
+  width: 100%;
+  margin-top: 12px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.terms {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.register-btn {
+  display: block;
+  margin: 20px auto;
+  border-radius: 20px;
+  color: white !important;
+}

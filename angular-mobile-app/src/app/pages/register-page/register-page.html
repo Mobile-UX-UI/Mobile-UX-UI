@@ -1,0 +1,38 @@
+<div class="register-page">
+  <div class="brand">DA<span>vai</span></div>
+
+  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <input matInput placeholder="Prename" formControlName="firstName">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <input matInput placeholder="Surname" formControlName="lastName">
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full">
+      <input matInput placeholder="email" formControlName="email">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <input matInput type="password" placeholder="password" formControlName="password">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full">
+      <input matInput type="password" placeholder="repeat your password" formControlName="repeatPassword">
+    </mat-form-field>
+
+    <div class="terms">
+      <span>TERMS OF PRIVACY</span>
+      <mat-slide-toggle formControlName="acceptTerms"></mat-slide-toggle>
+    </div>
+
+    <button mat-flat-button class="register-btn" type="submit">
+      REGISTER
+    </button>
+
+  </form>
+</div>
