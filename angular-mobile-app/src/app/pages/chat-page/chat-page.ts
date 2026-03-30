@@ -1,10 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { AuthService } from '../../services/auth/auth.service';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-chat-page',
@@ -12,12 +13,24 @@ import { AuthService } from '../../services/auth/auth.service';
   templateUrl: './chat-page.html',
   styleUrl: './chat-page.css',
 })
-export class ChatPage{
+export class ChatPage implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
+  private platformId = inject(PLATFORM_ID);
 
   isProcessing = false;
+
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const token = this.authService.getToken();
+
+    if (!token) {
+      this.router.navigate(['/login']);
+      return;
+    }
+  }
 
   onLogout(): void {
     if (this.isProcessing) return;
