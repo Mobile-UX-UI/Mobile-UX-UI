@@ -63,3 +63,10 @@ mat-form-field {
   border-radius: 20px;
   color: white !important;
 }
+
+.error-text {
+  margin: 8px 0 12px;
+  color: #c62828;
+  font-size: 14px;
+  text-align: center;
+}

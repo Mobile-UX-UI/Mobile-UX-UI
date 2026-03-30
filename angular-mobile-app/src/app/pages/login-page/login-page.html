@@ -10,23 +10,23 @@
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <div class="field-group">
-        <label for="email">email</label>
-        <mat-form-field appearance="outline" class="full-width">
-          <input
-            matInput
-            id="email"
-            type="email"
-            placeholder="Solo field"
-            formControlName="email"
-          />
-          <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
-            Email is required
-          </mat-error>
-          <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
-            Enter a valid email
-          </mat-error>
-        </mat-form-field>
-      </div>
+  <label for="userid">userid</label>
+  <mat-form-field appearance="outline" class="full-width">
+    <input
+      matInput
+      id="userid"
+      type="text"
+      placeholder="HSE userid"
+      formControlName="userid"
+    />
+    <mat-error *ngIf="loginForm.get('userid')?.hasError('required')">
+      User ID is required
+    </mat-error>
+    <mat-error *ngIf="loginForm.get('userid')?.hasError('minlength') || loginForm.get('userid')?.hasError('maxlength')">
+      User ID must be 8 characters
+    </mat-error>
+  </mat-form-field>
+</div>
 
       <div class="field-group">
         <label for="password">password</label>
@@ -35,7 +35,7 @@
             matInput
             id="password"
             [type]="hidePassword ? 'password' : 'text'"
-            placeholder="Solo field"
+            placeholder="Password"
             formControlName="password"
           />
           <button
@@ -51,19 +51,23 @@
             Password is required
           </mat-error>
           <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
-            Minimum 6 characters
+            Minimum 5 characters
           </mat-error>
         </mat-form-field>
       </div>
 
-      <button mat-flat-button class="login-button" type="submit">
-        LOGIN
+      <p *ngIf="errorMessage" class="error-text">
+        {{ errorMessage }}
+      </p>
+
+      <button mat-flat-button class="login-button" type="submit" [disabled]="isLoading">
+        {{ isLoading ? 'LOADING...' : 'LOGIN' }}
       </button>
 
       <p class="register-text">
-  NO ACCOUNT?
-  <span class="link" (click)="goToRegister()">REGISTER</span>
-</p>
+        NO ACCOUNT?
+        <span class="link" (click)="goToRegister()">REGISTER</span>
+      </p>
     </form>
   </div>
 </div>

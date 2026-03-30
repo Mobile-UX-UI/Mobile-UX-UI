@@ -4,3 +4,16 @@ html, body {
   padding: 0;
 }
 
+.error-snackbar .mdc-snackbar__surface {
+  background-color: #c62828 !important;
+  color: #fff !important;
+}
+
+.success-snackbar .mdc-snackbar__surface {
+  background-color: #2e7d32 !important;
+  color: #fff !important;
+}
+
+.mat-mdc-snack-bar-action {
+  color: #fff !important;
+}

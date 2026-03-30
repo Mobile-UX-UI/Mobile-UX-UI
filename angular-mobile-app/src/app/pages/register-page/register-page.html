@@ -3,36 +3,52 @@
 
   <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
 
+    <mat-form-field appearance="outline" class="full">
+      <input matInput placeholder="HSE userid" formControlName="userid">
+      <mat-error *ngIf="registerForm.get('userid')?.hasError('required')">
+        User ID is required
+      </mat-error>
+      <mat-error *ngIf="registerForm.get('userid')?.hasError('minlength') || registerForm.get('userid')?.hasError('maxlength')">
+        User ID must be 8 characters
+      </mat-error>
+    </mat-form-field>
+
     <div class="row">
       <mat-form-field appearance="outline">
-        <input matInput placeholder="Prename" formControlName="firstName">
+        <input matInput placeholder="First name" formControlName="firstName">
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <input matInput placeholder="Surname" formControlName="lastName">
+        <input matInput placeholder="Last name" formControlName="lastName">
       </mat-form-field>
     </div>
 
     <mat-form-field appearance="outline" class="full">
-      <input matInput placeholder="email" formControlName="email">
+      <input matInput placeholder="Nickname" formControlName="nickname">
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full">
-      <input matInput type="password" placeholder="password" formControlName="password">
+      <input matInput type="password" placeholder="Password" formControlName="password">
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full">
-      <input matInput type="password" placeholder="repeat your password" formControlName="repeatPassword">
+      <input matInput type="password" placeholder="Repeat your password" formControlName="repeatPassword">
+      <mat-error *ngIf="registerForm.hasError('mismatch') && registerForm.get('repeatPassword')?.touched">
+        Passwords do not match
+      </mat-error>
     </mat-form-field>
 
     <div class="terms">
-      <span>TERMS OF PRIVACY</span>
-      <mat-slide-toggle formControlName="acceptTerms"></mat-slide-toggle>
-    </div>
+  <span>TERMS OF PRIVACY</span>
+  <mat-slide-toggle formControlName="acceptTerms"></mat-slide-toggle>
+</div>
 
-    <button mat-flat-button class="register-btn" type="submit">
-      REGISTER
-    </button>
+<p *ngIf="errorMessage" class="error-text">
+  {{ errorMessage }}
+</p>
 
+<button mat-flat-button class="register-btn" type="submit">
+  REGISTER
+</button>
   </form>
 </div>

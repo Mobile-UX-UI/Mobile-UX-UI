@@ -1,12 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
+
+import { HttpErrorResponse } from '@angular/common/http';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
   selector: 'app-register-page',
@@ -22,33 +27,83 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 export class RegisterPage {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private authService = inject(AuthService);
+  private snackBar = inject(MatSnackBar);
 
-  hidePassword = true;
-  hideRepeatPassword = true;
+  errorMessage = '';
+  successMessage = '';
 
   registerForm = this.fb.group({
+    userid: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(8)]],
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    nickname: ['', Validators.required],
+    password: ['', [Validators.required, Validators.minLength(5)]],
     repeatPassword: ['', Validators.required],
     acceptTerms: [false, Validators.requiredTrue]
   }, { validators: this.passwordMatchValidator });
 
-  passwordMatchValidator(control: AbstractControl) {
+  passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
-    const repeat = control.get('repeatPassword')?.value;
+    const repeatPassword = control.get('repeatPassword')?.value;
 
-    return password === repeat ? null : { mismatch: true };
+    return password === repeatPassword ? null : { mismatch: true };
   }
 
   onSubmit(): void {
-    if (this.registerForm.invalid) {
-      this.registerForm.markAllAsTouched();
-      return;
+  if (this.registerForm.invalid) {
+    this.registerForm.markAllAsTouched();
+
+    if (this.registerForm.hasError('mismatch')) {
+      this.showError('Passwords do not match');
+    } else {
+      this.showError('Please fill in all required fields correctly');
     }
 
+    return;
+  }
 
-    this.router.navigate(['/login']);
+  const { userid, firstName, lastName, nickname, password } =
+    this.registerForm.getRawValue();
+
+  if (!userid || !firstName || !lastName || !nickname || !password) {
+    this.showError('Missing required data');
+    return;
+  }
+
+  const fullname = `${firstName} ${lastName}`;
+
+  this.authService
+    .register(userid, password, nickname, fullname)
+    
+    .subscribe({
+      next: () => {
+        this.snackBar.open('Registration successful. Please log in.', 'OK', {
+          duration: 3000,
+          verticalPosition: 'bottom',
+          horizontalPosition: 'center',
+          panelClass: ['success-snackbar']
+        });
+
+        this.router.navigate(['/login']);
+      },
+      error: (error: HttpErrorResponse) => {
+        const message =
+          typeof error.error === 'string'
+            ? error.error
+            : error?.error?.message ?? 'Registration failed';
+
+        this.showError(message);
+      }
+    });
+}
+
+  private showError(message: string): void {
+    this.snackBar.open(message, 'OK', {
+      duration: 4000,
+      verticalPosition: 'bottom',
+      horizontalPosition: 'center',
+      panelClass: ['error-snackbar']
+    });
   }
 }
