@@ -26,7 +26,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class LoginPage {
   hidePassword = true;
   isLoading = false;
-  errorMessage = '';
 
   private fb = inject(FormBuilder);
   private router = inject(Router);
@@ -38,55 +37,59 @@ export class LoginPage {
     password: ['', [Validators.required, Validators.minLength(5)]]
   });
 
-onSubmit(): void {
-  if (this.loginForm.invalid) {
-    this.loginForm.markAllAsTouched();
-    this.showError('Please enter your userid and password correctly');
-    return;
+  onSubmit(): void {
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      this.showError('Please enter your userid and password correctly');
+      return;
+    }
+
+    const { userid, password } = this.loginForm.getRawValue();
+
+    if (!userid || !password) {
+      this.showError('Missing login data');
+      return;
+    }
+
+    this.authService.clearToken();
+    this.isLoading = true;
+
+    this.authService.login(userid, password).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+
+        if (response?.token) {
+          this.router.navigate(['/chat']);
+        } else {
+          this.showError('Login failed');
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.isLoading = false;
+        this.authService.clearToken();
+
+        const message =
+          typeof error.error === 'string'
+            ? error.error
+            : error?.error?.message ?? 'Login failed';
+
+        this.showError(message);
+      },
+    });
   }
-
-  const { userid, password } = this.loginForm.getRawValue();
-
-  if (!userid || !password) {
-    this.showError('Missing login data');
-    return;
-  }
-
-  this.isLoading = true;
-
-  this.authService.login(userid, password).subscribe({
-    next: (response) => {
-      this.isLoading = false;
-
-      if (response?.token) {
-        this.router.navigate(['/chat']);
-      } else {
-        this.showError('Login failed');
-      }
-    },
-    error: (error: HttpErrorResponse) => {
-      this.isLoading = false;
-
-      const message =
-        typeof error.error === 'string'
-          ? error.error
-          : error?.error?.message ?? 'Login failed';
-
-      this.showError(message);
-    },
-  });
-}
 
   goToRegister(): void {
     this.router.navigate(['/register']);
   }
 
   private showError(message: string): void {
-    this.snackBar.open(message, 'OK', {
-      duration: 4000,
-      verticalPosition: 'bottom',
-      horizontalPosition: 'center',
-      panelClass: ['error-snackbar']
+    setTimeout(() => {
+      this.snackBar.open(message, 'OK', {
+        duration: 4000,
+        verticalPosition: 'bottom',
+        horizontalPosition: 'center',
+        panelClass: ['error-snackbar']
+      });
     });
   }
 }

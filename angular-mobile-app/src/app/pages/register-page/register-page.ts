@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { finalize } from 'rxjs';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -78,15 +77,17 @@ export class RegisterPage {
     
     .subscribe({
       next: () => {
-        this.snackBar.open('Registration successful. Please log in.', 'OK', {
-          duration: 3000,
-          verticalPosition: 'bottom',
-          horizontalPosition: 'center',
-          panelClass: ['success-snackbar']
-        });
+  this.authService.clearToken();
 
-        this.router.navigate(['/login']);
-      },
+  this.snackBar.open('Registration successful. Please log in.', 'OK', {
+    duration: 3000,
+    verticalPosition: 'bottom',
+    horizontalPosition: 'center',
+    panelClass: ['success-snackbar']
+  });
+
+  this.router.navigate(['/login']);
+},
       error: (error: HttpErrorResponse) => {
         const message =
           typeof error.error === 'string'

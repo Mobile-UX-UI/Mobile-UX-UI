@@ -14,7 +14,8 @@ export class AuthService {
     return this.api.get<AuthResponse>('login', { userid, password }).pipe(
       tap((response) => {
         if (response.token) {
-          localStorage.setItem(this.tokenKey, response.token);
+          const token = response.token.trim();
+          localStorage.setItem(this.tokenKey, token);
         }
       })
     );
@@ -31,35 +32,53 @@ export class AuthService {
       password,
       nickname,
       fullname,
-    }).pipe(
-      tap((response) => {
-        if (response.token) {
-          localStorage.setItem(this.tokenKey, response.token);
-        }
-      })
-    );
+    });
   }
 
   public getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    const token = localStorage.getItem(this.tokenKey);
+    return token ? token.trim() : null;
   }
 
   public isLoggedIn(): boolean {
     return !!this.getToken();
   }
 
+  public validateToken(): Observable<unknown> | void {
+    const token = this.getToken();
+
+    if (!token) return;
+
+    return this.api.get('validatetoken', { token });
+  }
+
   public logout(): Observable<unknown> | void {
     const token = this.getToken();
 
     if (!token) {
-      localStorage.removeItem(this.tokenKey);
+      this.clearToken();
       return;
     }
 
     return this.api.get('logout', { token }).pipe(
-      tap(() => {
-        localStorage.removeItem(this.tokenKey);
-      })
+      tap(() => this.clearToken())
     );
+  }
+
+  public deregister(): Observable<unknown> | void {
+    const token = this.getToken();
+
+    if (!token) {
+      this.clearToken();
+      return;
+    }
+
+    return this.api.get('deregister', { token }).pipe(
+      tap(() => this.clearToken())
+    );
+  }
+
+  public clearToken(): void {
+    localStorage.removeItem(this.tokenKey);
   }
 }

@@ -56,10 +56,6 @@
         </mat-form-field>
       </div>
 
-      <p *ngIf="errorMessage" class="error-text">
-        {{ errorMessage }}
-      </p>
-
       <button mat-flat-button class="login-button" type="submit" [disabled]="isLoading">
         {{ isLoading ? 'LOADING...' : 'LOGIN' }}
       </button>
