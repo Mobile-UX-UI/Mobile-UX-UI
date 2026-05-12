@@ -55,7 +55,7 @@ export class ChatPage implements OnInit {
         this.isProcessing = false;
         this.authService.clearToken();
         this.router.navigate(['/login']);
-      }
+      },
     });
   }
 
@@ -80,7 +80,7 @@ export class ChatPage implements OnInit {
         this.snackBar.open('Account deleted', 'OK', {
           duration: 3000,
           verticalPosition: 'bottom',
-          horizontalPosition: 'center'
+          horizontalPosition: 'center',
         });
 
         this.router.navigate(['/login']);
@@ -91,7 +91,7 @@ export class ChatPage implements OnInit {
         const message =
           typeof error.error === 'string'
             ? error.error
-            : error?.error?.message ?? 'Invalid token';
+            : (error?.error?.message ?? 'Invalid token');
 
         this.authService.clearToken();
 
@@ -99,11 +99,11 @@ export class ChatPage implements OnInit {
           duration: 3000,
           verticalPosition: 'bottom',
           horizontalPosition: 'center',
-          panelClass: ['error-snackbar']
+          panelClass: ['error-snackbar'],
         });
 
         this.router.navigate(['/login']);
-      }
+      },
     });
   }
 }

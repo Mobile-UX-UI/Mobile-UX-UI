@@ -10,23 +10,28 @@
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <div class="field-group">
-  <label for="userid">userid</label>
-  <mat-form-field appearance="outline" class="full-width">
-    <input
-      matInput
-      id="userid"
-      type="text"
-      placeholder="HSE userid"
-      formControlName="userid"
-    />
-    <mat-error *ngIf="loginForm.get('userid')?.hasError('required')">
-      User ID is required
-    </mat-error>
-    <mat-error *ngIf="loginForm.get('userid')?.hasError('minlength') || loginForm.get('userid')?.hasError('maxlength')">
-      User ID must be 8 characters
-    </mat-error>
-  </mat-form-field>
-</div>
+        <label for="userid">userid</label>
+        <mat-form-field appearance="outline" class="full-width">
+          <input
+            matInput
+            id="userid"
+            type="text"
+            placeholder="HSE userid"
+            formControlName="userid"
+          />
+          <mat-error *ngIf="loginForm.get('userid')?.hasError('required')">
+            User ID is required
+          </mat-error>
+          <mat-error
+            *ngIf="
+              loginForm.get('userid')?.hasError('minlength') ||
+              loginForm.get('userid')?.hasError('maxlength')
+            "
+          >
+            User ID must be 8 characters
+          </mat-error>
+        </mat-form-field>
+      </div>
 
       <div class="field-group">
         <label for="password">password</label>

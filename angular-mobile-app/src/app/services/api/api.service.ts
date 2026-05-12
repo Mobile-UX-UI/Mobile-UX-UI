@@ -10,11 +10,7 @@ export class ApiService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl;
 
-  public get<T>(
-    request: string,
-    params?: Record<string, string | number>
-  ): Observable<T> {
-
+  public get<T>(request: string, params?: Record<string, string | number>): Observable<T> {
     let httpParams = new HttpParams().set('request', request);
 
     if (params) {
@@ -26,14 +22,10 @@ export class ApiService {
     return this.http.get<T>(this.baseUrl, { params: httpParams });
   }
 
-  public post<T>(
-    request: string,
-    body?: Record<string, unknown>
-  ): Observable<T> {
-
+  public post<T>(request: string, body?: Record<string, unknown>): Observable<T> {
     return this.http.post<T>(this.baseUrl, {
       request,
-      ...body
+      ...body,
     });
   }
 }

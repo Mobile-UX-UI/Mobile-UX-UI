@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router} from '@angular/router';
+import { Router } from '@angular/router';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -13,16 +13,17 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-login-page',
-  imports: [ CommonModule,
+  imports: [
+    CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule],
+    MatIconModule,
+  ],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
-
 export class LoginPage {
   hidePassword = true;
 
@@ -33,7 +34,7 @@ export class LoginPage {
 
   loginForm = this.fb.group({
     userid: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(8)]],
-    password: ['', [Validators.required, Validators.minLength(5)]]
+    password: ['', [Validators.required, Validators.minLength(5)]],
   });
 
   onSubmit(): void {
@@ -64,9 +65,7 @@ export class LoginPage {
         this.authService.clearToken();
 
         const message =
-          typeof error.error === 'string'
-            ? error.error
-            : error?.error?.message ?? 'Login failed';
+          typeof error.error === 'string' ? error.error : (error?.error?.message ?? 'Login failed');
 
         this.showError(message);
       },
@@ -83,7 +82,7 @@ export class LoginPage {
         duration: 4000,
         verticalPosition: 'bottom',
         horizontalPosition: 'center',
-        panelClass: ['error-snackbar']
+        panelClass: ['error-snackbar'],
       });
     });
   }

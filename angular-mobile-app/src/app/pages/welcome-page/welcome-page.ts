@@ -7,11 +7,12 @@ import { Router } from '@angular/router';
   templateUrl: './welcome-page.html',
   styleUrl: './welcome-page.css',
 })
-export class WelcomePage  implements OnInit{
- constructor(private router: Router) {}
+export class WelcomePage implements OnInit {
+  constructor(private router: Router) {}
 
   ngOnInit() {
     setTimeout(() => {
       this.router.navigate(['/login']);
     }, 2500);
-  }}
+  }
+}

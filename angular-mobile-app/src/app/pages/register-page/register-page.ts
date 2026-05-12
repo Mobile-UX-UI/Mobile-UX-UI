@@ -1,6 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { HttpErrorResponse } from '@angular/common/http';
@@ -14,12 +20,14 @@ import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
   selector: 'app-register-page',
-  imports: [ CommonModule,
+  imports: [
+    CommonModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatSlideToggleModule],
+    MatSlideToggleModule,
+  ],
   templateUrl: './register-page.html',
   styleUrl: './register-page.css',
 })
@@ -32,15 +40,18 @@ export class RegisterPage {
   errorMessage = '';
   successMessage = '';
 
-  registerForm = this.fb.group({
-    userid: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(8)]],
-    firstName: ['', Validators.required],
-    lastName: ['', Validators.required],
-    nickname: ['', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(5)]],
-    repeatPassword: ['', Validators.required],
-    acceptTerms: [false, Validators.requiredTrue]
-  }, { validators: this.passwordMatchValidator });
+  registerForm = this.fb.group(
+    {
+      userid: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(8)]],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      nickname: ['', Validators.required],
+      password: ['', [Validators.required, Validators.minLength(5)]],
+      repeatPassword: ['', Validators.required],
+      acceptTerms: [false, Validators.requiredTrue],
+    },
+    { validators: this.passwordMatchValidator },
+  );
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
@@ -50,63 +61,62 @@ export class RegisterPage {
   }
 
   onSubmit(): void {
-  if (this.registerForm.invalid) {
-    this.registerForm.markAllAsTouched();
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
 
-    if (this.registerForm.hasError('mismatch')) {
-      this.showError('Passwords do not match');
-    } else {
-      this.showError('Please fill in all required fields correctly');
+      if (this.registerForm.hasError('mismatch')) {
+        this.showError('Passwords do not match');
+      } else {
+        this.showError('Please fill in all required fields correctly');
+      }
+
+      return;
     }
 
-    return;
+    const { userid, firstName, lastName, nickname, password } = this.registerForm.getRawValue();
+
+    if (!userid || !firstName || !lastName || !nickname || !password) {
+      this.showError('Missing required data');
+      return;
+    }
+
+    const fullname = `${firstName} ${lastName}`;
+
+    this.authService
+      .register(userid, password, nickname, fullname)
+
+      .subscribe({
+        next: (response) => {
+          if (response?.token) {
+            this.authService.saveToken(response.token);
+          }
+
+          this.snackBar.open('Registration successful.', 'OK', {
+            duration: 3000,
+            verticalPosition: 'bottom',
+            horizontalPosition: 'center',
+            panelClass: ['success-snackbar'],
+          });
+
+          this.router.navigate(['/chat']);
+        },
+        error: (error: HttpErrorResponse) => {
+          const message =
+            typeof error.error === 'string'
+              ? error.error
+              : (error?.error?.message ?? 'Registration failed');
+
+          this.showError(message);
+        },
+      });
   }
-
-  const { userid, firstName, lastName, nickname, password } =
-    this.registerForm.getRawValue();
-
-  if (!userid || !firstName || !lastName || !nickname || !password) {
-    this.showError('Missing required data');
-    return;
-  }
-
-  const fullname = `${firstName} ${lastName}`;
-
-  this.authService
-    .register(userid, password, nickname, fullname)
-    
-    .subscribe({
-      next: (response) => {
-  if (response?.token) {
-    this.authService.saveToken(response.token);
-  }
-
-  this.snackBar.open('Registration successful.', 'OK', {
-    duration: 3000,
-    verticalPosition: 'bottom',
-    horizontalPosition: 'center',
-    panelClass: ['success-snackbar']
-  });
-
-  this.router.navigate(['/chat']);
-},
-      error: (error: HttpErrorResponse) => {
-        const message =
-          typeof error.error === 'string'
-            ? error.error
-            : error?.error?.message ?? 'Registration failed';
-
-        this.showError(message);
-      }
-    });
-}
 
   private showError(message: string): void {
     this.snackBar.open(message, 'OK', {
       duration: 4000,
       verticalPosition: 'bottom',
       horizontalPosition: 'center',
-      panelClass: ['error-snackbar']
+      panelClass: ['error-snackbar'],
     });
   }
 }
