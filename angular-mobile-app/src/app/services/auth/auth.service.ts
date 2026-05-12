@@ -7,6 +7,7 @@ import { isPlatformBrowser } from '@angular/common';
 @Injectable({
   providedIn: 'root',
 })
+
 export class AuthService {
   private api = inject(ApiService);
   private platformId = inject(PLATFORM_ID);
@@ -19,7 +20,7 @@ export class AuthService {
   public login(userid: string, password: string): Observable<AuthResponse> {
     return this.api.get<AuthResponse>('login', { userid, password }).pipe(
       tap((response) => {
-        if (response.token && this.isBrowser()) {
+        if (response?.token && this.isBrowser()) {
           const token = response.token.trim();
           localStorage.setItem(this.tokenKey, token);
         }
@@ -52,42 +53,44 @@ export class AuthService {
     return !!this.getToken();
   }
 
-  public validateToken(): Observable<unknown> | void {
+  public validateToken(): Observable<unknown> | null {
     const token = this.getToken();
 
-    if (!token) return;
+    if (!token) {
+      return null;
+    }
 
     return this.api.get('validatetoken', { token });
   }
 
-  public logout(): Observable<unknown> | void {
+  public logout(): Observable<unknown> | null {
     const token = this.getToken();
 
     if (!token) {
-      this.clearToken();
-      return;
+      return null;
     }
 
-    return this.api.get('logout', { token }).pipe(
-      tap(() => this.clearToken())
-    );
+    return this.api.get('logout', { token });
   }
 
-  public deregister(): Observable<unknown> | void {
+  public deregister(): Observable<unknown> | null {
     const token = this.getToken();
 
     if (!token) {
-      this.clearToken();
-      return;
+      return null;
     }
 
-    return this.api.get('deregister', { token }).pipe(
-      tap(() => this.clearToken())
-    );
+    return this.api.get('deregister', { token });
   }
+
+  public saveToken(token: string): void {
+  if (!this.isBrowser()) return;
+  localStorage.setItem(this.tokenKey, token.trim());
+}
 
   public clearToken(): void {
     if (!this.isBrowser()) return;
+
     localStorage.removeItem(this.tokenKey);
   }
 }

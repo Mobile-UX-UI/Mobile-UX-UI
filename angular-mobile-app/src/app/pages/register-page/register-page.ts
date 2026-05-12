@@ -76,17 +76,19 @@ export class RegisterPage {
     .register(userid, password, nickname, fullname)
     
     .subscribe({
-      next: () => {
-  this.authService.clearToken();
+      next: (response) => {
+  if (response?.token) {
+    this.authService.saveToken(response.token);
+  }
 
-  this.snackBar.open('Registration successful. Please log in.', 'OK', {
+  this.snackBar.open('Registration successful.', 'OK', {
     duration: 3000,
     verticalPosition: 'bottom',
     horizontalPosition: 'center',
     panelClass: ['success-snackbar']
   });
 
-  this.router.navigate(['/login']);
+  this.router.navigate(['/chat']);
 },
       error: (error: HttpErrorResponse) => {
         const message =

@@ -25,7 +25,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 export class LoginPage {
   hidePassword = true;
-  isLoading = false;
 
   private fb = inject(FormBuilder);
   private router = inject(Router);
@@ -52,12 +51,9 @@ export class LoginPage {
     }
 
     this.authService.clearToken();
-    this.isLoading = true;
 
     this.authService.login(userid, password).subscribe({
       next: (response) => {
-        this.isLoading = false;
-
         if (response?.token) {
           this.router.navigate(['/chat']);
         } else {
@@ -65,7 +61,6 @@ export class LoginPage {
         }
       },
       error: (error: HttpErrorResponse) => {
-        this.isLoading = false;
         this.authService.clearToken();
 
         const message =
