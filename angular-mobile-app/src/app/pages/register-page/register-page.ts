@@ -15,6 +15,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { AuthService } from '../../services/auth/auth.service';
 
@@ -26,6 +27,7 @@ import { AuthService } from '../../services/auth/auth.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
     MatSlideToggleModule,
   ],
   templateUrl: './register-page.html',
@@ -52,14 +54,14 @@ export class RegisterPage {
     { validators: this.passwordMatchValidator },
   );
 
-  passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+  public passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
     const repeatPassword = control.get('repeatPassword')?.value;
 
     return password === repeatPassword ? null : { mismatch: true };
   }
 
-  onSubmit(): void {
+  public onSubmit(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
 
@@ -108,6 +110,10 @@ export class RegisterPage {
           this.showError(message);
         },
       });
+  }
+
+  public goBack(): void {
+    this.router.navigate(['/login']);
   }
 
   private showError(message: string): void {

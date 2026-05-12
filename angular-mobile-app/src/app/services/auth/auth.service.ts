@@ -7,6 +7,7 @@ import { isPlatformBrowser } from '@angular/common';
 @Injectable({
   providedIn: 'root',
 })
+
 export class AuthService {
   private api = inject(ApiService);
   private platformId = inject(PLATFORM_ID);
@@ -23,7 +24,7 @@ export class AuthService {
           const token = response.token.trim();
           localStorage.setItem(this.tokenKey, token);
         }
-      }),
+      })
     );
   }
 
@@ -31,7 +32,7 @@ export class AuthService {
     userid: string,
     password: string,
     nickname: string,
-    fullname: string,
+    fullname: string
   ): Observable<AuthResponse> {
     return this.api.get<AuthResponse>('register', {
       userid,
@@ -83,9 +84,9 @@ export class AuthService {
   }
 
   public saveToken(token: string): void {
-    if (!this.isBrowser()) return;
-    localStorage.setItem(this.tokenKey, token.trim());
-  }
+  if (!this.isBrowser()) return;
+  localStorage.setItem(this.tokenKey, token.trim());
+}
 
   public clearToken(): void {
     if (!this.isBrowser()) return;

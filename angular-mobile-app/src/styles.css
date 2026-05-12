@@ -2,6 +2,14 @@ html,
 body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #f4f4f4;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .error-snackbar .mdc-snackbar__surface {

@@ -13,7 +13,6 @@
   position: absolute;
   top: 20px;
   right: 20px;
-
   width: 70px;
   height: 70px;
   border: 2px solid black;
@@ -60,4 +59,10 @@ mat-form-field {
   color: #c62828;
   font-size: 14px;
   text-align: center;
+}
+
+.back-button {
+  position: absolute;
+  top: 40px;
+  left: 20px;
 }
