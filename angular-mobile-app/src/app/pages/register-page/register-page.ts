@@ -48,7 +48,6 @@ export class RegisterPage {
       nickname: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(5)]],
       repeatPassword: ['', Validators.required],
-      acceptTerms: [false, Validators.requiredTrue],
     },
     { validators: this.passwordMatchValidator },
   );

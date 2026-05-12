@@ -48,15 +48,6 @@ mat-form-field {
   width: 100%;
 }
 
-.terms {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 20px 0;
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-
 .register-btn {
   display: block;
   margin: 20px auto;
