@@ -10,7 +10,11 @@ export class ApiService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl;
 
-  public get<T>(request: string, params?: Record<string, string | number>): Observable<T> {
+  public get<T>(
+    request: string,
+    params?: Record<string, string | number>,
+    options?: { noCache?: boolean },
+  ): Observable<T> {
     let httpParams = new HttpParams().set('request', request);
 
     if (params) {
@@ -19,7 +23,13 @@ export class ApiService {
       }
     }
 
-    return this.http.get<T>(this.baseUrl, { params: httpParams });
+    if (options?.noCache) {
+      httpParams = httpParams.set('_', Date.now().toString());
+    }
+
+    return this.http.get<T>(this.baseUrl, {
+      params: httpParams,
+    });
   }
 
   public post<T>(request: string, body?: Record<string, unknown>): Observable<T> {

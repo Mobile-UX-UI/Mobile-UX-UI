@@ -19,8 +19,6 @@ export class ChatPage implements OnInit {
   private snackBar = inject(MatSnackBar);
   private platformId = inject(PLATFORM_ID);
 
-  isProcessing = false;
-
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
@@ -33,13 +31,9 @@ export class ChatPage implements OnInit {
   }
 
   onLogout(): void {
-    if (this.isProcessing) return;
-
-    this.isProcessing = true;
     const result = this.authService.logout();
 
     if (!result) {
-      this.isProcessing = false;
       this.authService.clearToken();
       this.router.navigate(['/login']);
       return;
@@ -47,12 +41,10 @@ export class ChatPage implements OnInit {
 
     result.subscribe({
       next: () => {
-        this.isProcessing = false;
         this.authService.clearToken();
         this.router.navigate(['/login']);
       },
       error: () => {
-        this.isProcessing = false;
         this.authService.clearToken();
         this.router.navigate(['/login']);
       },
@@ -60,13 +52,9 @@ export class ChatPage implements OnInit {
   }
 
   onDeregister(): void {
-    if (this.isProcessing) return;
-
-    this.isProcessing = true;
     const result = this.authService.deregister();
 
     if (!result) {
-      this.isProcessing = false;
       this.authService.clearToken();
       this.router.navigate(['/login']);
       return;
@@ -74,7 +62,6 @@ export class ChatPage implements OnInit {
 
     result.subscribe({
       next: () => {
-        this.isProcessing = false;
         this.authService.clearToken();
 
         this.snackBar.open('Account deleted', 'OK', {
@@ -86,8 +73,6 @@ export class ChatPage implements OnInit {
         this.router.navigate(['/login']);
       },
       error: (error: HttpErrorResponse) => {
-        this.isProcessing = false;
-
         const message =
           typeof error.error === 'string'
             ? error.error

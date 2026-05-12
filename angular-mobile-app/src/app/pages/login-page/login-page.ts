@@ -55,10 +55,12 @@ export class LoginPage {
 
     this.authService.login(userid, password).subscribe({
       next: (response) => {
-        if (response?.token) {
+        if (response?.status === 'ok' && response?.token) {
+          this.authService.saveToken(response.token);
           this.router.navigate(['/chat']);
         } else {
-          this.showError('Login failed');
+          this.authService.clearToken();
+          this.showError(response?.message ?? 'Login failed');
         }
       },
       error: (error: HttpErrorResponse) => {
