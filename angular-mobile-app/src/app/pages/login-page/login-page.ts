@@ -57,7 +57,7 @@ export class LoginPage {
       next: (response) => {
         if (response?.status === 'ok' && response?.token) {
           this.authService.saveToken(response.token);
-          this.router.navigate(['/chat']);
+          this.router.navigate(['/groups']);
         } else {
           this.authService.clearToken();
           this.showError(response?.message ?? 'Login failed');
