@@ -10,16 +10,12 @@ import { AuthService } from '../../services/auth/auth.service';
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
 
 @Component({
-  selector: 'app-you-page',
-  imports: [
-    MatButtonModule,
-    MatSnackBarModule,
-    BottomNavbar
-  ],
-  templateUrl: './you-page.html',
-  styleUrl: './you-page.css',
+  selector: 'app-profile-page',
+  imports: [MatButtonModule, MatSnackBarModule, BottomNavbar],
+  templateUrl: './profile-page.html',
+  styleUrl: './profile-page.css',
 })
-export class YouPage implements OnInit {
+export class ProfilePage implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
