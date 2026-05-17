@@ -99,7 +99,7 @@ export class RegisterPage {
             panelClass: ['success-snackbar'],
           });
 
-          this.router.navigate(['/groups']);
+          this.router.navigate(['/chats']);
         },
         error: (error: HttpErrorResponse) => {
           const message =
