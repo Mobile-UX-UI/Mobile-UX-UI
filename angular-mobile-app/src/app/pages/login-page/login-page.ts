@@ -55,16 +55,65 @@ export class LoginPage {
 
     this.authService.login(userid, password).subscribe({
       next: (response) => {
-        if (response?.status === 'ok' && response?.token) {
-          this.authService.saveToken(response.token);
-          this.router.navigate(['/chats']);
-        } else {
-          this.authService.clearToken();
+        if (response?.status !== 'ok' || !response?.token) {
+          this.authService.clearAll();
           this.showError(response?.message ?? 'Login failed');
+          return;
         }
+
+        this.authService.saveToken(response.token);
+
+        const profilesRequest = this.authService.getProfiles();
+
+        if (!profilesRequest) {
+          this.authService.saveUserProfile({
+            userid,
+            firstName: '',
+            lastName: '',
+            nickname: userid,
+            fullname: userid,
+            hash: response.hash,
+          });
+
+          this.router.navigate(['/chats']);
+          return;
+        }
+
+        profilesRequest.subscribe({
+          next: (profilesResponse) => {
+            const currentProfile = profilesResponse.profiles?.find(
+              (profile) => profile.hash === response.hash,
+            );
+
+            this.authService.saveUserProfile({
+              userid,
+              firstName: '',
+              lastName: '',
+              nickname: currentProfile?.nickname ?? userid,
+              fullname: userid,
+              hash: response.hash,
+            });
+
+            this.router.navigate(['/chats']);
+          },
+
+          error: () => {
+            this.authService.saveUserProfile({
+              userid,
+              firstName: '',
+              lastName: '',
+              nickname: userid,
+              fullname: userid,
+              hash: response.hash,
+            });
+
+            this.router.navigate(['/chats']);
+          },
+        });
       },
+
       error: (error: HttpErrorResponse) => {
-        this.authService.clearToken();
+        this.authService.clearAll();
 
         const message =
           typeof error.error === 'string' ? error.error : (error?.error?.message ?? 'Login failed');

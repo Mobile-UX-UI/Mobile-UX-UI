@@ -1,18 +1,58 @@
 <div class="page-container">
   <div class="page-content">
-    <h2>You</h2>
+    <h2>Account</h2>
 
-    <button mat-flat-button (click)="onLogout()">
-      LOGOUT
-    </button>
+    <section class="profile-card">
+      <div class="avatar">
+        <mat-icon>person</mat-icon>
+      </div>
 
-    <button
-      mat-flat-button
-      color="warn"
-      (click)="onDeregister()"
-    >
-      DELETE ACCOUNT
-    </button>
+      <div class="info-box" *ngIf="profile?.fullname && profile?.fullname !== profile?.userid">
+        <div>
+          <span>Name:</span>
+          <strong>{{ profile?.fullname }}</strong>
+        </div>
+      </div>
+
+      <div class="info-box" *ngIf="profile?.nickname">
+        <div>
+          <span>Nickname:</span>
+          <strong>{{ profile?.nickname }}</strong>
+        </div>
+      </div>
+
+      <div class="info-box" *ngIf="profile?.userid">
+        <div>
+          <span>User ID:</span>
+          <strong>{{ profile?.userid }}</strong>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div>
+          <span>Hochschule:</span>
+          <strong>Hochschule Esslingen</strong>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="action-item">
+          <button mat-icon-button class="action-button delete" (click)="onDeregister()">
+            <mat-icon>delete</mat-icon>
+          </button>
+
+          <span>Delete</span>
+        </div>
+
+        <div class="action-item">
+          <button mat-icon-button class="action-button logout" (click)="onLogout()">
+            <mat-icon>logout</mat-icon>
+          </button>
+
+          <span>Logout</span>
+        </div>
+      </div>
+    </section>
   </div>
 
   <app-bottom-navbar></app-bottom-navbar>

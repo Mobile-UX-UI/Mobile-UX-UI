@@ -92,6 +92,15 @@ export class RegisterPage {
             this.authService.saveToken(response.token);
           }
 
+          this.authService.saveUserProfile({
+            userid,
+            firstName,
+            lastName,
+            nickname,
+            fullname,
+            hash: response?.hash,
+          });
+
           this.snackBar.open('Registration successful.', 'OK', {
             duration: 3000,
             verticalPosition: 'bottom',
