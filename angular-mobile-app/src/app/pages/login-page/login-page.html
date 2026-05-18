@@ -10,18 +10,21 @@
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <div class="field-group">
-        <label for="userid">userid</label>
+        <label for="userid">User ID</label>
+
         <mat-form-field appearance="outline" class="full-width">
           <input
             matInput
             id="userid"
             type="text"
-            placeholder="HSE userid"
+            placeholder="Enter HSE userid"
             formControlName="userid"
           />
+
           <mat-error *ngIf="loginForm.get('userid')?.hasError('required')">
             User ID is required
           </mat-error>
+
           <mat-error
             *ngIf="
               loginForm.get('userid')?.hasError('minlength') ||
@@ -34,27 +37,27 @@
       </div>
 
       <div class="field-group">
-        <label for="password">password</label>
+        <label for="password">Password</label>
+
         <mat-form-field appearance="outline" class="full-width">
           <input
             matInput
             id="password"
             [type]="hidePassword ? 'password' : 'text'"
-            placeholder="Password"
+            placeholder="Enter password"
             formControlName="password"
           />
-          <button
-            type="button"
-            mat-icon-button
-            matSuffix
-            (click)="hidePassword = !hidePassword"
-            [attr.aria-label]="'Toggle password visibility'"
-          >
-            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+
+          <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword">
+            <mat-icon>
+              {{ hidePassword ? 'visibility_off' : 'visibility' }}
+            </mat-icon>
           </button>
+
           <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
             Password is required
           </mat-error>
+
           <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
             Minimum 5 characters
           </mat-error>
@@ -64,8 +67,8 @@
       <button mat-flat-button class="login-button" type="submit">LOGIN</button>
 
       <p class="register-text">
-        NO ACCOUNT?
-        <span class="link" (click)="goToRegister()">REGISTER</span>
+        No account?
+        <span class="link" (click)="goToRegister()">Register</span>
       </p>
     </form>
   </div>
