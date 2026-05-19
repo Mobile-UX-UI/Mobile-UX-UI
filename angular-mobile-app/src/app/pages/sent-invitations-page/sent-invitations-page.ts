@@ -4,12 +4,12 @@ import { RouterLink } from '@angular/router';
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
 
 @Component({
-  selector: 'app-invitations-page',
+  selector: 'app-sent-invitations-page',
   imports: [
     BottomNavbar,
     RouterLink
   ],
-  templateUrl: './invitations-page.html',
-  styleUrl: './invitations-page.css',
+  templateUrl: './sent-invitations-page.html',
+  styleUrl: './sent-invitations-page.css',
 })
-export class InvitationsPage {}
+export class SentInvitationsPage {}
