@@ -7,24 +7,20 @@ import { MatIconModule } from '@angular/material/icon';
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
 
 @Component({
-  selector: 'app-chat-page',
+  selector: 'app-unread-chats-page',
   imports: [
     BottomNavbar,
     FormsModule,
     RouterLink,
     MatIconModule
   ],
-  templateUrl: './chat-page.html',
-  styleUrl: './chat-page.css',
+  templateUrl: './unread-chats-page.html',
+  styleUrl: './unread-chats-page.css',
 })
-export class ChatPage {
+export class UnreadChatsPage {
   searchText = '';
 
-  onSearch(): void {
-    // später Suchfunktion
-  }
+  onSearch(): void {}
 
-  onCreateGroup(): void {
-    // später Plus-Button Funktion
-  }
+  onCreateGroup(): void {}
 }

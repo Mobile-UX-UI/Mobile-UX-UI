@@ -22,7 +22,10 @@ export class BottomNavbar {
   }
 
   isChatsActive(): boolean {
-    return this.router.url === '/chats';
+    return (
+    this.router.url === '/chats' ||
+    this.router.url === '/unread-chats' ||
+    this.router.url === '/favorite-chats');
   }
 
   isProfileActive(): boolean {
