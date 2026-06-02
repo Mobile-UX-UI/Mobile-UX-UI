@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../services/auth/auth.service';
+import { ProfileService } from '../../services/profile/profile.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -30,6 +31,7 @@ export class LoginPage {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private profileService = inject(ProfileService);
   private snackBar = inject(MatSnackBar);
 
   loginForm = this.fb.group({
@@ -63,7 +65,7 @@ export class LoginPage {
 
         this.authService.saveToken(response.token);
 
-        const profilesRequest = this.authService.getProfiles();
+        const profilesRequest = this.profileService.getProfiles();
 
         if (!profilesRequest) {
           this.authService.saveUserProfile({

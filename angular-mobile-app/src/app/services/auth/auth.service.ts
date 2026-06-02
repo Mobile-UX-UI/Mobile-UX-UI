@@ -1,10 +1,11 @@
+import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { Observable } from 'rxjs';
+
 import { ApiService } from '../api/api.service';
 import { AuthResponse } from '../../models/auth/auth-response.model';
-import { isPlatformBrowser } from '@angular/common';
+import { StatusResponse } from '../../models/common/status-response';
 import { UserProfile } from '../../models/profile/user-profile';
-import { GetProfilesResponse } from '../../models/profile/get-profiles-response';
 
 @Injectable({
   providedIn: 'root',
@@ -37,36 +38,28 @@ export class AuthService {
     );
   }
 
-  public validateToken(): Observable<AuthResponse> | null {
+  public validateToken(): Observable<StatusResponse> | null {
     const token = this.getToken();
 
     if (!token) return null;
 
-    return this.api.get<AuthResponse>('validatetoken', { token }, { noCache: true });
+    return this.api.get<StatusResponse>('validatetoken', { token }, { noCache: true });
   }
 
-  public getProfiles(): Observable<GetProfilesResponse> | null {
+  public logout(): Observable<StatusResponse> | null {
     const token = this.getToken();
 
     if (!token) return null;
 
-    return this.api.get<GetProfilesResponse>('getprofiles', { token }, { noCache: true });
+    return this.api.get<StatusResponse>('logout', { token }, { noCache: true });
   }
 
-  public logout(): Observable<AuthResponse> | null {
+  public deregister(): Observable<StatusResponse> | null {
     const token = this.getToken();
 
     if (!token) return null;
 
-    return this.api.get<AuthResponse>('logout', { token }, { noCache: true });
-  }
-
-  public deregister(): Observable<AuthResponse> | null {
-    const token = this.getToken();
-
-    if (!token) return null;
-
-    return this.api.get<AuthResponse>('deregister', { token }, { noCache: true });
+    return this.api.get<StatusResponse>('deregister', { token }, { noCache: true });
   }
 
   public saveToken(token: string): void {

@@ -1,27 +1,16 @@
 <nav class="bottom-navbar">
-
-  <a
-    routerLink="/invitations"
-    [class.active]="isInvitationsActive()"
-  >
+  <a routerLink="/invitations" [class.active]="isInvitationsActive()">
     <mat-icon>mail</mat-icon>
     <span>Invitations</span>
   </a>
 
-  <a
-    routerLink="/chats"
-    [class.active]="isChatsActive()"
-  >
-    <mat-icon>groups</mat-icon>
+  <a routerLink="/chats" [class.active]="isChatsActive()">
+    <mat-icon>forum</mat-icon>
     <span>Chats</span>
   </a>
 
-  <a
-    routerLink="/profile"
-    [class.active]="isProfileActive()"
-  >
+  <a routerLink="/profile" [class.active]="isProfileActive()">
     <mat-icon>person</mat-icon>
     <span>You</span>
   </a>
-
 </nav>

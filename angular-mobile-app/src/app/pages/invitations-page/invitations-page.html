@@ -1,19 +1,49 @@
 <div class="page-container">
   <div class="page-content">
-
+    <h2>Invitations</h2>
     <div class="toggle-buttons">
-      <button class="active-btn">
+      <button
+        [class.active-btn]="selectedTab === 'received'"
+        [class.inactive-btn]="selectedTab !== 'received'"
+        (click)="selectTab('received')"
+      >
         My Invitations
       </button>
 
       <button
-        class="inactive-btn"
-        routerLink="/sent-invitations"
+        [class.active-btn]="selectedTab === 'sent'"
+        [class.inactive-btn]="selectedTab !== 'sent'"
+        (click)="selectTab('sent')"
       >
         Sent
       </button>
     </div>
 
+    @if (selectedTab === 'received') {
+      @for (invitation of receivedInvitations; track invitation.from + invitation.chatname) {
+        <div class="invitation-card">
+          <div>Sent on: {{ invitation.sentOn }}</div>
+
+          <div>From: {{ invitation.from }}</div>
+
+          <div>Chat: {{ invitation.chatname }}</div>
+        </div>
+      }
+    }
+
+    @if (selectedTab === 'sent') {
+      @for (invitation of sentInvitations; track invitation.to + invitation.chatname) {
+        <div class="invitation-card sent-card">
+          <div>Sent on: {{ invitation.sentOn }}</div>
+
+          <div>To: {{ invitation.to }}</div>
+
+          <div>Chat: {{ invitation.chatname }}</div>
+
+          <div>Status: {{ invitation.status }}</div>
+        </div>
+      }
+    }
   </div>
 
   <app-bottom-navbar></app-bottom-navbar>
