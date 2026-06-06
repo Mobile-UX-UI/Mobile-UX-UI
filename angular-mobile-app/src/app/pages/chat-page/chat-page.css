@@ -45,8 +45,6 @@
   align-items: center;
   justify-content: center;
 
-  cursor: pointer;
-
   color: #555;
 }
 
@@ -79,8 +77,6 @@
 
   font-size: 12px;
   font-weight: 500;
-
-  cursor: pointer;
 }
 
 .filter-btn.active {
@@ -102,7 +98,6 @@
   border: none;
   background: transparent;
   color: #3f51b5;
-  cursor: pointer;
 }
 
 .plus-button mat-icon {

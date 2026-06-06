@@ -1,0 +1,25 @@
+<div class="chat-item">
+  <div class="chat-avatar" [style.background-color]="avatarColor">
+    {{ firstLetter }}
+  </div>
+
+  <div class="chat-info">
+    <div class="chat-top-row">
+      <strong>{{ chat().chatname }}</strong>
+
+      <mat-icon class="visibility-icon">
+        {{ chat().visibility === 'public' ? 'public' : 'lock' }}
+      </mat-icon>
+    </div>
+
+    <div class="chat-bottom-row">
+      <span>{{ chat().role }}</span>
+
+      @if (chat().joined) {
+        <span class="joined">Joined</span>
+      } @else {
+        <span class="not-joined">Not joined</span>
+      }
+    </div>
+  </div>
+</div>

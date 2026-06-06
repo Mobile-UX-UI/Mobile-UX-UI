@@ -30,21 +30,20 @@ export class ChatService {
     return this.api.get<ChatsResponse>('getchats', params, { noCache: true });
   }
 
-  public createChat(chatname: string, ispublic?: boolean): Observable<CreateChatResponse> | null {
+  public createChat(chatname: string, ispublic: boolean): Observable<CreateChatResponse> | null {
     const token = this.auth.getToken();
 
     if (!token) {
       return null;
     }
 
-    const params: Record<string, string | boolean> = {
+    const params: Record<string, string> = {
       token,
       chatname,
+      ispublic: ispublic ? 'true' : 'false',
     };
 
-    if (ispublic !== undefined) {
-      params['ispublic'] = ispublic;
-    }
+    console.log('createChat params:', params);
 
     return this.api.get<CreateChatResponse>('createchat', params, { noCache: true });
   }

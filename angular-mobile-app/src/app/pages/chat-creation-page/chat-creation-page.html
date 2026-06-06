@@ -1,20 +1,38 @@
 <div class="page-container">
   <div class="page-content">
-    <div class="fixed-top">
-      <h2>Create Chat</h2>
+    <div>
+      <div class="header-row">
+        <button type="button" class="back-button" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
 
-      <form class="search-bar">
+        <h2>Create Chat</h2>
+      </div>
+
+      <div class="chat-form">
+        <input type="text" name="chatname" [(ngModel)]="chatname" placeholder="Chat name" />
+
+        <label class="public-checkbox" (click)="ispublic = !ispublic">
+          <mat-icon class="checkbox-icon">
+            {{ ispublic ? 'check_box' : 'check_box_outline_blank' }}
+          </mat-icon>
+
+          <span>Public chat</span>
+        </label>
+      </div>
+
+      <div class="search-bar">
         <input type="text" name="searchText" [(ngModel)]="searchText" placeholder="Search" />
 
         <mat-icon>search</mat-icon>
-      </form>
+      </div>
     </div>
 
     <div class="profile-list">
       @for (profile of filteredProfiles; track profile.hash) {
         <button type="button" class="profile-card" (click)="toggleProfile(profile)">
           <div class="avatar" [style.background-color]="getAvatarColor(profile.hash)">
-            {{ profile.nickname[0] }}
+            {{ profile.nickname.charAt(0).toUpperCase() }}
           </div>
 
           <div class="profile-info">
@@ -30,7 +48,7 @@
       }
     </div>
 
-    <button type="button" class="create-button" (click)="onCreate()">
+    <button type="button" class="create-button" (click)="onCreate()" [disabled]="!chatname.trim()">
       <mat-icon>near_me</mat-icon>
       <span>Create</span>
     </button>
