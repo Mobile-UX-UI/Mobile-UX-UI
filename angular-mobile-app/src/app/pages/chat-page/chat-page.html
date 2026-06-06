@@ -1,28 +1,20 @@
 <div class="page-container">
   <div class="page-content">
     <h2>Chats</h2>
-    <form class="search-bar" (ngSubmit)="onSearch()">
-      <input type="text" name="searchText" [(ngModel)]="searchText" placeholder="Search" />
+    <div class="search-container">
+      <form class="search-bar">
+        <input type="text" placeholder="Search" />
 
-      <button type="submit" class="search-button">
-        <mat-icon>search</mat-icon>
-      </button>
-    </form>
-
-    <div class="group-actions">
-      <div class="filter-buttons">
-        <button class="filter-btn active">All</button>
-
-        <button class="filter-btn">Unread</button>
-
-        <button class="filter-btn">Favorites</button>
-      </div>
+        <button type="submit" class="search-button">
+          <mat-icon>search</mat-icon>
+        </button>
+      </form>
 
       <button class="plus-button" type="button" (click)="onCreateGroup()">
-        <mat-icon>add</mat-icon>
+        <mat-icon>add_circle</mat-icon>
       </button>
     </div>
-  </div>
 
-  <app-bottom-navbar></app-bottom-navbar>
+    <app-bottom-navbar></app-bottom-navbar>
+  </div>
 </div>

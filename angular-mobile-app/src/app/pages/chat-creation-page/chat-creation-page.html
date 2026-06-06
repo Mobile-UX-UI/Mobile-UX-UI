@@ -1,0 +1,38 @@
+<div class="page-container">
+  <div class="page-content">
+    <div class="fixed-top">
+      <h2>Create Chat</h2>
+
+      <form class="search-bar">
+        <input type="text" name="searchText" [(ngModel)]="searchText" placeholder="Search" />
+
+        <mat-icon>search</mat-icon>
+      </form>
+    </div>
+
+    <div class="profile-list">
+      @for (profile of filteredProfiles; track profile.hash) {
+        <button type="button" class="profile-card" (click)="toggleProfile(profile)">
+          <div class="avatar" [style.background-color]="getAvatarColor(profile.hash)">
+            {{ profile.nickname[0] }}
+          </div>
+
+          <div class="profile-info">
+            <strong>{{ profile.nickname }}</strong>
+          </div>
+
+          <mat-icon class="checkbox-icon">
+            {{ isSelected(profile) ? 'check_box' : 'check_box_outline_blank' }}
+          </mat-icon>
+        </button>
+      } @empty {
+        <p class="empty-text">No profiles found</p>
+      }
+    </div>
+
+    <button type="button" class="create-button" (click)="onCreate()">
+      <mat-icon>near_me</mat-icon>
+      <span>Create</span>
+    </button>
+  </div>
+</div>

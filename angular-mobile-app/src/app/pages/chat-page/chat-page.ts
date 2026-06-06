@@ -1,30 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-chat-page',
-  imports: [
-    BottomNavbar,
-    FormsModule,
-    RouterLink,
-    MatIconModule
-  ],
+  imports: [BottomNavbar, FormsModule, MatIconModule],
   templateUrl: './chat-page.html',
   styleUrl: './chat-page.css',
 })
 export class ChatPage {
-  searchText = '';
-
-  onSearch(): void {
-    // später Suchfunktion
-  }
+  private router = inject(Router);
 
   onCreateGroup(): void {
-    // später Plus-Button Funktion
+    this.router.navigate(['chats/new']);
   }
 }
