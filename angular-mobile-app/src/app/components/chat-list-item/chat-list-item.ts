@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 import { Chat } from '../../models/chat/chat';
@@ -11,6 +11,7 @@ import { Chat } from '../../models/chat/chat';
 })
 export class ChatListItem {
   chat = input.required<Chat>();
+  chatClicked = output<Chat>();
 
   avatarColors = ['#B429F9', '#9C43F8', '#855DF7', '#6D77F6', '#5591F5', '#3EABF4', '#26C5F3'];
 
@@ -26,5 +27,9 @@ export class ChatListItem {
     }
 
     return this.avatarColors[sum % this.avatarColors.length];
+  }
+
+  onClick(): void {
+    this.chatClicked.emit(this.chat());
   }
 }

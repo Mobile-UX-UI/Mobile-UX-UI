@@ -1,6 +1,7 @@
 <div class="page-container">
   <div class="page-content">
     <h2>Chats</h2>
+
     <div class="search-container">
       <form class="search-bar">
         <input type="text" name="searchText" [(ngModel)]="searchText" placeholder="Search" />
@@ -17,7 +18,7 @@
 
     <div class="chat-list">
       @for (chat of filteredChats; track chat.chatid) {
-        <app-chat-list-item [chat]="chat"></app-chat-list-item>
+        <app-chat-list-item [chat]="chat" (chatClicked)="openChat($event)"></app-chat-list-item>
       } @empty {
         <p class="empty-text">No chats found</p>
       }

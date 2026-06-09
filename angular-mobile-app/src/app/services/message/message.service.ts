@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../api/api.service';
 import { AuthService } from '../auth/auth.service';
 import { MessagesResponse } from '../../models/message/messages-response';
+import { StatusResponse } from '../../models/common/status-response';
 
 @Injectable({
   providedIn: 'root',
@@ -38,6 +39,25 @@ export class MessageService {
     }
 
     return this.api.get<MessagesResponse>('getmessages', params, { noCache: true });
+  }
+
+  public postMessage(text: string, chatid?: string): Observable<StatusResponse> | null {
+    const token = this.auth.getToken();
+
+    if (!token) {
+      return null;
+    }
+
+    const body: Record<string, unknown> = {
+      token,
+      text,
+    };
+
+    if (chatid) {
+      body['chatid'] = chatid;
+    }
+
+    return this.api.post<StatusResponse>('postmessage', body);
   }
 
   public getPhoto(photoid: string): Observable<Blob> | null {

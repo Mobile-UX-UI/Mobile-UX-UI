@@ -1,0 +1,71 @@
+<div class="chat-page">
+  <header class="chat-header">
+    <button class="back-button" type="button" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+
+    <div class="chat-avatar">
+      {{ chat?.chatname?.charAt(0)?.toUpperCase() || '?' }}
+    </div>
+
+    <div class="chat-title">
+      <strong>{{ chat?.chatname || 'Chat' }}</strong>
+      <span>{{ chat?.role || '' }}</span>
+    </div>
+
+    <button class="menu-button" type="button">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+  </header>
+
+  <main class="messages-container">
+    @for (message of messages; track message.id) {
+      <div class="message-row" [class.my-message-row]="isMyMessage(message)">
+        @if (!isMyMessage(message)) {
+          <div class="message-avatar">
+            {{ getInitials(message) }}
+          </div>
+        }
+
+        <div class="message-content">
+          @if (!isMyMessage(message)) {
+            <div class="sender-name">
+              {{ message.usernick || message.username || message.userid }}
+            </div>
+          }
+
+          <div class="message-bubble" [class.my-message]="isMyMessage(message)">
+            {{ message.text }}
+          </div>
+
+          <div class="message-time">
+            {{ formatTime(message.time) }}
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <p class="empty-messages">No messages yet</p>
+    }
+  </main>
+
+  <form class="message-input-bar" (submit)="sendMessage()">
+    <button type="button" class="small-icon-button">
+      <mat-icon>sentiment_satisfied</mat-icon>
+    </button>
+
+    <button type="button" class="small-icon-button">
+      <mat-icon>attach_file</mat-icon>
+    </button>
+
+    <input
+      type="text"
+      name="newMessageText"
+      [(ngModel)]="newMessageText"
+      placeholder="Type message here..."
+    />
+
+    <button type="submit" class="send-button">
+      <mat-icon>send</mat-icon>
+    </button>
+  </form>
+</div>

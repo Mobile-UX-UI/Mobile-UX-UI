@@ -69,3 +69,7 @@
 .not-joined {
   color: #777;
 }
+
+.chat-item:active {
+  transform: scale(0.98);
+}

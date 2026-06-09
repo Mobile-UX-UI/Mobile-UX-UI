@@ -107,6 +107,10 @@ export class AuthService {
     localStorage.removeItem(this.profileKey);
   }
 
+  public getCurrentUserHash(): string | null {
+    return this.getUserProfile()?.hash ?? null;
+  }
+
   public isLoggedIn(): boolean {
     return !!this.getToken();
   }

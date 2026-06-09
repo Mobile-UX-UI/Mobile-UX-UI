@@ -7,20 +7,18 @@ import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
 import { ChatListItem } from '../../components/chat-list-item/chat-list-item';
 
 import { ChatService } from '../../services/chat/chat.service';
-import { AuthService } from '../../services/auth/auth.service';
 
 import { Chat } from '../../models/chat/chat';
 
 @Component({
-  selector: 'app-chat-page',
+  selector: 'app-chat-list-page',
   imports: [BottomNavbar, FormsModule, MatIconModule, ChatListItem],
-  templateUrl: './chat-page.html',
-  styleUrl: './chat-page.css',
+  templateUrl: './chat-list-page.html',
+  styleUrl: './chat-list-page.css',
 })
-export class ChatPage implements OnInit {
+export class ChatListPage implements OnInit {
   private router = inject(Router);
   private chatService = inject(ChatService);
-  private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
 
   chats: Chat[] = [];
@@ -62,5 +60,17 @@ export class ChatPage implements OnInit {
 
   onCreateGroup(): void {
     this.router.navigate(['/chats/new']);
+  }
+
+  openChat(chat: Chat): void {
+    if (!chat.joined) {
+      return;
+    }
+
+    this.router.navigate(['/chats', chat.chatid], {
+      state: {
+        chat,
+      },
+    });
   }
 }
