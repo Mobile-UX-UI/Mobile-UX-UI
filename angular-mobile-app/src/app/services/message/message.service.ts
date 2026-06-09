@@ -41,7 +41,11 @@ export class MessageService {
     return this.api.get<MessagesResponse>('getmessages', params, { noCache: true });
   }
 
-  public postMessage(text: string, chatid?: string): Observable<StatusResponse> | null {
+  public postMessage(
+    text?: string,
+    chatid?: string,
+    photo?: string,
+  ): Observable<StatusResponse> | null {
     const token = this.auth.getToken();
 
     if (!token) {
@@ -50,11 +54,18 @@ export class MessageService {
 
     const body: Record<string, unknown> = {
       token,
-      text,
     };
+
+    if (text) {
+      body['text'] = text;
+    }
 
     if (chatid) {
       body['chatid'] = chatid;
+    }
+
+    if (photo) {
+      body['photo'] = photo;
     }
 
     return this.api.post<StatusResponse>('postmessage', body);

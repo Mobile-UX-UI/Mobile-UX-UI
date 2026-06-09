@@ -1,4 +1,12 @@
-import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { ApiMessage } from '../../models/message/api-message';
 import { Chat } from '../../models/chat/chat';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,9 +22,12 @@ import { MatIconModule } from '@angular/material/icon';
   templateUrl: './chat-detail-page.html',
   styleUrl: './chat-detail-page.css',
 })
-export class ChatDetailPage implements OnInit {
+export class ChatDetailPage implements OnInit, OnDestroy {
   @ViewChild('messagesContainer')
   messagesContainer?: ElementRef<HTMLDivElement>;
+
+  @ViewChild('cameraPreview')
+  cameraPreview?: ElementRef<HTMLVideoElement>;
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -31,6 +42,12 @@ export class ChatDetailPage implements OnInit {
   messages: ApiMessage[] = [];
   newMessageText = '';
 
+  selectedPhotoBase64 = '';
+  photoUrls: Record<string, string> = {};
+
+  isCameraOpen = false;
+  private cameraStream?: MediaStream;
+
   ngOnInit(): void {
     this.chatid = this.route.snapshot.paramMap.get('chatid') ?? '';
 
@@ -38,12 +55,14 @@ export class ChatDetailPage implements OnInit {
     this.loadMessages();
   }
 
+  ngOnDestroy(): void {
+    this.closeCamera();
+  }
+
   loadChat(): void {
     const request = this.chatService.getChats();
 
-    if (!request) {
-      return;
-    }
+    if (!request) return;
 
     request.subscribe({
       next: (response) => {
@@ -59,13 +78,12 @@ export class ChatDetailPage implements OnInit {
   loadMessages(): void {
     const request = this.messageService.getMessages(undefined, this.chatid);
 
-    if (!request) {
-      return;
-    }
+    if (!request) return;
 
     request.subscribe({
       next: (response) => {
         this.messages = [...(response.messages ?? [])];
+        this.loadPhotos();
         this.cdr.detectChanges();
 
         setTimeout(() => {
@@ -78,6 +96,77 @@ export class ChatDetailPage implements OnInit {
     });
   }
 
+  loadPhotos(): void {
+    for (const message of this.messages) {
+      if (!message.photoid || this.photoUrls[message.photoid]) continue;
+
+      const request = this.messageService.getPhoto(message.photoid);
+
+      if (!request) continue;
+
+      request.subscribe({
+        next: (blob) => {
+          this.photoUrls[message.photoid!] = URL.createObjectURL(blob);
+          this.cdr.detectChanges();
+        },
+        error: (error: unknown) => {
+          console.error('Get photo error:', error);
+        },
+      });
+    }
+  }
+
+  async openCamera(): Promise<void> {
+    try {
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+        },
+        audio: false,
+      });
+
+      this.isCameraOpen = true;
+      this.cdr.detectChanges();
+
+      setTimeout(() => {
+        if (this.cameraPreview?.nativeElement && this.cameraStream) {
+          this.cameraPreview.nativeElement.srcObject = this.cameraStream;
+        }
+      }, 0);
+    } catch (error: unknown) {
+      console.error('Camera access error:', error);
+    }
+  }
+
+  takePhoto(): void {
+    const video = this.cameraPreview?.nativeElement;
+
+    if (!video) return;
+
+    const canvas = document.createElement('canvas');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const context = canvas.getContext('2d');
+
+    if (!context) return;
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    this.selectedPhotoBase64 = canvas.toDataURL('image/png');
+
+    this.closeCamera();
+    this.cdr.detectChanges();
+  }
+
+  closeCamera(): void {
+    this.cameraStream?.getTracks().forEach((track) => track.stop());
+    this.cameraStream = undefined;
+    this.isCameraOpen = false;
+    this.cdr.detectChanges();
+  }
+
   goBack(): void {
     this.router.navigate(['/chats']);
   }
@@ -85,25 +174,30 @@ export class ChatDetailPage implements OnInit {
   sendMessage(): void {
     const text = this.newMessageText.trim();
 
-    if (!text) {
-      return;
-    }
+    if (!text && !this.selectedPhotoBase64) return;
 
-    const request = this.messageService.postMessage(text, this.chatid);
+    const request = this.messageService.postMessage(
+      text || undefined,
+      this.chatid,
+      this.selectedPhotoBase64 || undefined,
+    );
 
-    if (!request) {
-      return;
-    }
+    if (!request) return;
 
     request.subscribe({
       next: () => {
         this.newMessageText = '';
+        this.selectedPhotoBase64 = '';
         this.loadMessages();
       },
       error: (error: unknown) => {
         console.error('Post message error:', error);
       },
     });
+  }
+
+  removeSelectedPhoto(): void {
+    this.selectedPhotoBase64 = '';
   }
 
   getInitials(message: ApiMessage): string {
@@ -114,17 +208,13 @@ export class ChatDetailPage implements OnInit {
   isMyMessage(message: ApiMessage): boolean {
     const currentUserHash = this.authService.getCurrentUserHash();
 
-    if (!currentUserHash || !message.userhash) {
-      return false;
-    }
+    if (!currentUserHash || !message.userhash) return false;
 
     return message.userhash === currentUserHash;
   }
 
   shouldShowDateSeparator(index: number): boolean {
-    if (index === 0) {
-      return true;
-    }
+    if (index === 0) return true;
 
     const currentMessage = this.messages[index];
     const previousMessage = this.messages[index - 1];
@@ -137,22 +227,15 @@ export class ChatDetailPage implements OnInit {
   getDateSeparator(time: string): string {
     const date = this.parseMessageDate(time);
 
-    if (!date) {
-      return time;
-    }
+    if (!date) return time;
 
     const today = new Date();
 
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
-    if (this.isSameDay(date, today)) {
-      return 'Today';
-    }
-
-    if (this.isSameDay(date, yesterday)) {
-      return 'Yesterday';
-    }
+    if (this.isSameDay(date, today)) return 'Today';
+    if (this.isSameDay(date, yesterday)) return 'Yesterday';
 
     if (date.getFullYear() === today.getFullYear()) {
       return date.toLocaleDateString('en-US', {
@@ -171,9 +254,7 @@ export class ChatDetailPage implements OnInit {
   formatTime(time: string): string {
     const date = this.parseMessageDate(time);
 
-    if (!date) {
-      return time;
-    }
+    if (!date) return time;
 
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -185,9 +266,7 @@ export class ChatDetailPage implements OnInit {
   private getMessageDateKey(time: string): string {
     const date = this.parseMessageDate(time);
 
-    if (!date) {
-      return time;
-    }
+    if (!date) return time;
 
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   }
@@ -219,9 +298,7 @@ export class ChatDetailPage implements OnInit {
   private scrollToBottom(): void {
     const container = this.messagesContainer?.nativeElement;
 
-    if (!container) {
-      return;
-    }
+    if (!container) return;
 
     container.scrollTop = container.scrollHeight;
   }

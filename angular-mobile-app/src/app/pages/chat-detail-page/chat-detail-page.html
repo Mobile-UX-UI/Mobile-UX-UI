@@ -41,7 +41,13 @@
           }
 
           <div class="message-bubble" [class.my-message]="isMyMessage(message)">
-            {{ message.text }}
+            @if (message.text) {
+              <span>{{ message.text }}</span>
+            }
+
+            @if (message.photoid && photoUrls[message.photoid]) {
+              <img class="message-photo" [src]="photoUrls[message.photoid]" alt="Message photo" />
+            }
           </div>
 
           <div class="message-time">
@@ -54,13 +60,41 @@
     }
   </main>
 
+  @if (selectedPhotoBase64) {
+    <div class="photo-preview">
+      <img [src]="selectedPhotoBase64" alt="Selected photo" />
+
+      <button type="button" class="remove-photo-button" (click)="removeSelectedPhoto()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
+  @if (isCameraOpen) {
+    <div class="camera-overlay">
+      <div class="camera-box">
+        <video #cameraPreview autoplay playsinline></video>
+
+        <div class="camera-actions">
+          <button type="button" class="camera-button secondary" (click)="closeCamera()">
+            Close
+          </button>
+
+          <button type="button" class="camera-button primary" (click)="takePhoto()">
+            Take photo
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
   <form class="message-input-bar" (submit)="sendMessage()">
     <button type="button" class="small-icon-button">
       <mat-icon>sentiment_satisfied</mat-icon>
     </button>
 
-    <button type="button" class="small-icon-button">
-      <mat-icon>attach_file</mat-icon>
+    <button type="button" class="small-icon-button" (click)="openCamera()">
+      <mat-icon>photo_camera</mat-icon>
     </button>
 
     <input
