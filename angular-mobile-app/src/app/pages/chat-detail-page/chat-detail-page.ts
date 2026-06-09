@@ -121,17 +121,99 @@ export class ChatDetailPage implements OnInit {
     return message.userhash === currentUserHash;
   }
 
-  formatTime(time: string): string {
-    const date = new Date(time);
+  shouldShowDateSeparator(index: number): boolean {
+    if (index === 0) {
+      return true;
+    }
 
-    if (Number.isNaN(date.getTime())) {
+    const currentMessage = this.messages[index];
+    const previousMessage = this.messages[index - 1];
+
+    return (
+      this.getMessageDateKey(currentMessage.time) !== this.getMessageDateKey(previousMessage.time)
+    );
+  }
+
+  getDateSeparator(time: string): string {
+    const date = this.parseMessageDate(time);
+
+    if (!date) {
       return time;
     }
 
-    return date.toLocaleTimeString([], {
+    const today = new Date();
+
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (this.isSameDay(date, today)) {
+      return 'Today';
+    }
+
+    if (this.isSameDay(date, yesterday)) {
+      return 'Yesterday';
+    }
+
+    if (date.getFullYear() === today.getFullYear()) {
+      return date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+      });
+    }
+
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  formatTime(time: string): string {
+    const date = this.parseMessageDate(time);
+
+    if (!date) {
+      return time;
+    }
+
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
     });
+  }
+
+  private getMessageDateKey(time: string): string {
+    const date = this.parseMessageDate(time);
+
+    if (!date) {
+      return time;
+    }
+
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  }
+
+  private parseMessageDate(time: string): Date | null {
+    const match = time.match(/^(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})$/);
+
+    if (match) {
+      const [, datePart, hours, minutes, seconds] = match;
+      const normalizedTime = `${datePart}T${hours}:${minutes}:${seconds}`;
+      const date = new Date(normalizedTime);
+
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    const date = new Date(time);
+
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  private isSameDay(date1: Date, date2: Date): boolean {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
   }
 
   private scrollToBottom(): void {

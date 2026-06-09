@@ -19,7 +19,13 @@
   </header>
 
   <main class="messages-container" #messagesContainer>
-    @for (message of messages; track message.id) {
+    @for (message of messages; track message.id; let i = $index) {
+      @if (shouldShowDateSeparator(i)) {
+        <div class="date-separator">
+          {{ getDateSeparator(message.time) }}
+        </div>
+      }
+
       <div class="message-row" [class.my-message-row]="isMyMessage(message)">
         @if (!isMyMessage(message)) {
           <div class="message-avatar">
