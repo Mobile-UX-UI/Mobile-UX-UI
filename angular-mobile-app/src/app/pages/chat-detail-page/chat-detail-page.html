@@ -40,15 +40,28 @@
             </div>
           }
 
-          <div class="message-bubble" [class.my-message]="isMyMessage(message)">
-            @if (message.text) {
-              <span>{{ message.text }}</span>
-            }
+          @if (message.text || message.photoid || message.position) {
+            <div class="message-bubble" [class.my-message]="isMyMessage(message)">
+              @if (message.photoid && photoUrls[message.photoid]) {
+                <img class="message-photo" [src]="photoUrls[message.photoid]" alt="Photo" />
+              }
 
-            @if (message.photoid && photoUrls[message.photoid]) {
-              <img class="message-photo" [src]="photoUrls[message.photoid]" alt="Message photo" />
-            }
-          </div>
+              @if (message.position) {
+                <img
+                  class="message-map"
+                  [src]="getMapImageUrl(message.position)"
+                  alt="Location map"
+                  (click)="openMap(message.position)"
+                />
+              }
+
+              @if (message.text) {
+                <div class="message-text">
+                  {{ message.text }}
+                </div>
+              }
+            </div>
+          }
 
           <div class="message-time">
             {{ formatTime(message.time) }}
@@ -66,6 +79,29 @@
 
       <button type="button" class="remove-photo-button" (click)="removeSelectedPhoto()">
         <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
+  @if (isAttachmentMenuOpen) {
+    <div class="attachment-menu">
+      <button type="button" class="attachment-option" (click)="imageInput.click()">
+        <mat-icon>image</mat-icon>
+        <span>Photo</span>
+      </button>
+
+      <button
+        type="button"
+        class="attachment-option"
+        (click)="openCameraOrMobileCamera(cameraInput)"
+      >
+        <mat-icon>photo_camera</mat-icon>
+        <span>Camera</span>
+      </button>
+
+      <button type="button" class="attachment-option" (click)="shareLocation()">
+        <mat-icon>location_on</mat-icon>
+        <span>Location</span>
       </button>
     </div>
   }
@@ -89,12 +125,25 @@
   }
 
   <form class="message-input-bar" (submit)="sendMessage()">
-    <button type="button" class="small-icon-button">
-      <mat-icon>sentiment_satisfied</mat-icon>
-    </button>
+    <input
+      #imageInput
+      type="file"
+      accept="image/png,image/jpeg"
+      hidden
+      (change)="onImageSelected($event)"
+    />
 
-    <button type="button" class="small-icon-button" (click)="openCamera()">
-      <mat-icon>photo_camera</mat-icon>
+    <input
+      #cameraInput
+      type="file"
+      accept="image/png,image/jpeg"
+      capture="environment"
+      hidden
+      (change)="onImageSelected($event)"
+    />
+
+    <button type="button" class="small-icon-button" (click)="toggleAttachmentMenu()">
+      <mat-icon>attach_file</mat-icon>
     </button>
 
     <input

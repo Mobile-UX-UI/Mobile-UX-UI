@@ -15,6 +15,7 @@ import { MessageService } from '../../services/message/message.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-chat-detail-page',
@@ -46,11 +47,12 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   photoUrls: Record<string, string> = {};
 
   isCameraOpen = false;
+  isAttachmentMenuOpen = false;
+
   private cameraStream?: MediaStream;
 
   ngOnInit(): void {
     this.chatid = this.route.snapshot.paramMap.get('chatid') ?? '';
-
     this.loadChat();
     this.loadMessages();
   }
@@ -98,11 +100,15 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   loadPhotos(): void {
     for (const message of this.messages) {
-      if (!message.photoid || this.photoUrls[message.photoid]) continue;
+      if (!message.photoid || this.photoUrls[message.photoid]) {
+        continue;
+      }
 
       const request = this.messageService.getPhoto(message.photoid);
 
-      if (!request) continue;
+      if (!request) {
+        continue;
+      }
 
       request.subscribe({
         next: (blob) => {
@@ -116,8 +122,43 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     }
   }
 
+  toggleAttachmentMenu(): void {
+    this.isAttachmentMenuOpen = !this.isAttachmentMenuOpen;
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.selectedPhotoBase64 = reader.result as string;
+      this.isAttachmentMenuOpen = false;
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  openCameraOrMobileCamera(cameraInput: HTMLInputElement): void {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      cameraInput.click();
+      return;
+    }
+
+    this.openCamera();
+  }
+
   async openCamera(): Promise<void> {
     try {
+      this.isAttachmentMenuOpen = false;
+
       this.cameraStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
@@ -144,7 +185,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     if (!video) return;
 
     const canvas = document.createElement('canvas');
-
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -153,7 +193,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     if (!context) return;
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
     this.selectedPhotoBase64 = canvas.toDataURL('image/png');
 
     this.closeCamera();
@@ -167,6 +206,73 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  shareLocation(): void {
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported by this browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (location) => {
+        const position = `${location.coords.latitude},${location.coords.longitude}`;
+
+        const request = this.messageService.postMessage(
+          undefined,
+          this.chatid,
+          undefined,
+          position,
+        );
+
+        if (!request) {
+          return;
+        }
+
+        request.subscribe({
+          next: () => {
+            this.isAttachmentMenuOpen = false;
+            this.loadMessages();
+          },
+          error: (error: unknown) => {
+            console.error('Post location error:', error);
+          },
+        });
+      },
+      (error: GeolocationPositionError) => {
+        console.error('Location error:', error);
+        this.isAttachmentMenuOpen = false;
+        this.cdr.detectChanges();
+      },
+    );
+  }
+
+  sendLocation(latitude: number, longitude: number): void {
+    const position = `${latitude},${longitude}`;
+
+    const request = this.messageService.postMessage(undefined, this.chatid, undefined, position);
+
+    if (!request) return;
+
+    request.subscribe({
+      next: () => {
+        this.isAttachmentMenuOpen = false;
+        this.loadMessages();
+      },
+      error: (error: unknown) => {
+        console.error('Post location error:', error);
+      },
+    });
+  }
+
+  getMapImageUrl(position: string): string {
+    const encodedPosition = encodeURIComponent(position);
+
+    return `https://maps.googleapis.com/maps/api/staticmap?center=${encodedPosition}&zoom=16&size=500x300&markers=color:red%7C${encodedPosition}&key=${environment.googleMapsApiKey}`;
+  }
+
+  openMap(position: string): void {
+    window.open(`https://maps.google.com/?q=${position}`, '_blank');
+  }
+
   goBack(): void {
     this.router.navigate(['/chats']);
   }
@@ -174,12 +280,15 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   sendMessage(): void {
     const text = this.newMessageText.trim();
 
-    if (!text && !this.selectedPhotoBase64) return;
+    if (!text && !this.selectedPhotoBase64) {
+      return;
+    }
 
     const request = this.messageService.postMessage(
       text || undefined,
       this.chatid,
       this.selectedPhotoBase64 || undefined,
+      undefined,
     );
 
     if (!request) return;
@@ -208,7 +317,9 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   isMyMessage(message: ApiMessage): boolean {
     const currentUserHash = this.authService.getCurrentUserHash();
 
-    if (!currentUserHash || !message.userhash) return false;
+    if (!currentUserHash || !message.userhash) {
+      return false;
+    }
 
     return message.userhash === currentUserHash;
   }
@@ -235,6 +346,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     yesterday.setDate(today.getDate() - 1);
 
     if (this.isSameDay(date, today)) return 'Today';
+
     if (this.isSameDay(date, yesterday)) return 'Yesterday';
 
     if (date.getFullYear() === today.getFullYear()) {

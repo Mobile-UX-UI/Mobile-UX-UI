@@ -33,8 +33,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
-  cursor: pointer;
 }
 
 .chat-avatar {
@@ -197,8 +195,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
-  cursor: pointer;
 }
 
 .send-button mat-icon {
@@ -263,7 +259,6 @@
   border: none;
   background: transparent;
   color: #555;
-  cursor: pointer;
 }
 
 .camera-overlay {
@@ -305,7 +300,6 @@
   border-radius: 20px;
   padding: 12px;
   font-weight: 600;
-  cursor: pointer;
 }
 
 .camera-button.primary {
@@ -316,4 +310,105 @@
 .camera-button.secondary {
   background: #eeeeee;
   color: #222;
+}
+
+.messages-container {
+  flex: 1;
+  padding: 24px 16px 150px;
+  overflow-y: auto;
+}
+
+.attachment-menu {
+  position: fixed;
+  left: calc(50% - 190px);
+  bottom: 92px;
+
+  width: fit-content;
+  max-width: calc(100% - 32px);
+
+  background: white;
+  border-radius: 22px;
+  padding: 12px;
+
+  display: flex;
+  gap: 10px;
+
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+}
+
+.attachment-option {
+  width: 70px;
+  height: 64px;
+
+  border: none;
+  background: #f3f3f7;
+  border-radius: 16px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  color: #4b55c5;
+}
+
+.attachment-option mat-icon {
+  font-size: 23px;
+  width: 23px;
+  height: 23px;
+  line-height: 23px;
+}
+
+.attachment-option span {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.file-preview {
+  position: fixed;
+  left: 50%;
+  bottom: 86px;
+  transform: translateX(-50%);
+
+  width: calc(100% - 32px);
+  max-width: 420px;
+
+  background: white;
+  border-radius: 18px;
+  padding: 10px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  z-index: 20;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.file-info strong {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-info span {
+  font-size: 11px;
+  color: #777;
+}
+
+.message-map {
+  display: block;
+  width: 240px;
+  height: 150px;
+  border-radius: 14px;
+  object-fit: cover;
 }

@@ -45,6 +45,7 @@ export class MessageService {
     text?: string,
     chatid?: string,
     photo?: string,
+    position?: string,
   ): Observable<StatusResponse> | null {
     const token = this.auth.getToken();
 
@@ -66,6 +67,10 @@ export class MessageService {
 
     if (photo) {
       body['photo'] = photo;
+    }
+
+    if (position) {
+      body['position'] = position;
     }
 
     return this.api.post<StatusResponse>('postmessage', body);

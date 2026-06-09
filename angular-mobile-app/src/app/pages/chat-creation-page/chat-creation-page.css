@@ -224,7 +224,6 @@
 
 .create-button:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .create-button mat-icon {
