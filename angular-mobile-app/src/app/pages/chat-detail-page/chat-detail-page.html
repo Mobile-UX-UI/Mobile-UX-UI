@@ -18,7 +18,7 @@
     </button>
   </header>
 
-  <main class="messages-container">
+  <main class="messages-container" #messagesContainer>
     @for (message of messages; track message.id) {
       <div class="message-row" [class.my-message-row]="isMyMessage(message)">
         @if (!isMyMessage(message)) {

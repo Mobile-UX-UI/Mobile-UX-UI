@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { ApiMessage } from '../../models/message/api-message';
 import { Chat } from '../../models/chat/chat';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -15,6 +15,9 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './chat-detail-page.css',
 })
 export class ChatDetailPage implements OnInit {
+  @ViewChild('messagesContainer')
+  messagesContainer?: ElementRef<HTMLDivElement>;
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private chatService = inject(ChatService);
@@ -31,19 +34,11 @@ export class ChatDetailPage implements OnInit {
   ngOnInit(): void {
     this.chatid = this.route.snapshot.paramMap.get('chatid') ?? '';
 
-    const navigation = this.router.getCurrentNavigation();
-    const stateChat = navigation?.extras.state?.['chat'] as Chat | undefined;
-
-    if (stateChat) {
-      this.chat = stateChat;
-    } else {
-      this.loadChatFromList();
-    }
-
+    this.loadChat();
     this.loadMessages();
   }
 
-  loadChatFromList(): void {
+  loadChat(): void {
     const request = this.chatService.getChats();
 
     if (!request) {
@@ -55,7 +50,7 @@ export class ChatDetailPage implements OnInit {
         this.chat = response.chats?.find((chat) => chat.chatid === this.chatid);
         this.cdr.detectChanges();
       },
-      error: (error) => {
+      error: (error: unknown) => {
         console.error('Load chat error:', error);
       },
     });
@@ -72,8 +67,12 @@ export class ChatDetailPage implements OnInit {
       next: (response) => {
         this.messages = [...(response.messages ?? [])];
         this.cdr.detectChanges();
+
+        setTimeout(() => {
+          this.scrollToBottom();
+        }, 0);
       },
-      error: (error) => {
+      error: (error: unknown) => {
         console.error('Get messages error:', error);
       },
     });
@@ -101,7 +100,7 @@ export class ChatDetailPage implements OnInit {
         this.newMessageText = '';
         this.loadMessages();
       },
-      error: (error) => {
+      error: (error: unknown) => {
         console.error('Post message error:', error);
       },
     });
@@ -115,7 +114,7 @@ export class ChatDetailPage implements OnInit {
   isMyMessage(message: ApiMessage): boolean {
     const currentUserHash = this.authService.getCurrentUserHash();
 
-    if (!currentUserHash) {
+    if (!currentUserHash || !message.userhash) {
       return false;
     }
 
@@ -133,5 +132,15 @@ export class ChatDetailPage implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  private scrollToBottom(): void {
+    const container = this.messagesContainer?.nativeElement;
+
+    if (!container) {
+      return;
+    }
+
+    container.scrollTop = container.scrollHeight;
   }
 }

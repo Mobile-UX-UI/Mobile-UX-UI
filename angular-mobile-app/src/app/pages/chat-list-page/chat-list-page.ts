@@ -67,10 +67,6 @@ export class ChatListPage implements OnInit {
       return;
     }
 
-    this.router.navigate(['/chats', chat.chatid], {
-      state: {
-        chat,
-      },
-    });
+    this.router.navigate(['/chats', chat.chatid]);
   }
 }
