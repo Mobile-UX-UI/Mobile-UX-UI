@@ -90,11 +90,7 @@
         <span>Photo</span>
       </button>
 
-      <button
-        type="button"
-        class="attachment-option"
-        (click)="openCameraOrMobileCamera(cameraInput)"
-      >
+      <button type="button" class="attachment-option" (click)="openCamera()">
         <mat-icon>photo_camera</mat-icon>
         <span>Camera</span>
       </button>
@@ -129,15 +125,6 @@
       #imageInput
       type="file"
       accept="image/png,image/jpeg"
-      hidden
-      (change)="onImageSelected($event)"
-    />
-
-    <input
-      #cameraInput
-      type="file"
-      accept="image/png,image/jpeg"
-      capture="environment"
       hidden
       (change)="onImageSelected($event)"
     />

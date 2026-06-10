@@ -144,17 +144,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     input.value = '';
   }
 
-  openCameraOrMobileCamera(cameraInput: HTMLInputElement): void {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      cameraInput.click();
-      return;
-    }
-
-    this.openCamera();
-  }
-
   async openCamera(): Promise<void> {
     try {
       this.isAttachmentMenuOpen = false;
