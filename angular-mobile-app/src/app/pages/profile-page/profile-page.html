@@ -7,7 +7,8 @@
         <mat-icon>person</mat-icon>
       </div>
 
-      <div class="info-box" *ngIf="profile?.fullname && profile?.fullname !== profile?.userid">
+      <div class="info-box"
+        *ngIf="profile?.fullname && profile?.fullname !== profile?.userid">
         <div>
           <span>Name:</span>
           <strong>{{ profile?.fullname }}</strong>
@@ -35,9 +36,22 @@
         </div>
       </div>
 
+      <div class="theme-row">
+        <div>
+          <strong>Dark Mode</strong>
+          <span>Switch app appearance</span>
+        </div>
+
+        <mat-slide-toggle
+          [checked]="isDarkMode"
+          (change)="onDarkModeChange($any($event))">
+        </mat-slide-toggle>
+      </div>
+
       <div class="actions">
         <div class="action-item">
-          <button mat-icon-button class="action-button delete" (click)="onDeregister()">
+          <button mat-icon-button class="action-button delete"
+            (click)="onDeregister()">
             <mat-icon>delete</mat-icon>
           </button>
 
@@ -45,7 +59,8 @@
         </div>
 
         <div class="action-item">
-          <button mat-icon-button class="action-button logout" (click)="onLogout()">
+          <button mat-icon-button class="action-button logout"
+            (click)="onLogout()">
             <mat-icon>logout</mat-icon>
           </button>
 

@@ -7,14 +7,15 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute, Router } from '@angular/router';
+
 import { ApiMessage } from '../../models/message/api-message';
 import { Chat } from '../../models/chat/chat';
-import { ActivatedRoute, Router } from '@angular/router';
 import { ChatService } from '../../services/chat/chat.service';
 import { MessageService } from '../../services/message/message.service';
 import { AuthService } from '../../services/auth/auth.service';
-import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -44,6 +45,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   newMessageText = '';
 
   selectedPhotoBase64 = '';
+  selectedImagePreviewUrl = '';
   photoUrls: Record<string, string> = {};
 
   isCameraOpen = false;
@@ -62,6 +64,10 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.closeCamera();
+
+    Object.values(this.photoUrls).forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
   }
 
   loadChat(): void {
@@ -72,9 +78,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     request.subscribe({
       next: (response) => {
         this.chat = response.chats?.find((chat) => String(chat.chatid) === String(this.chatid));
-
-        console.log('Current chat:', this.chat);
-        console.log('Current chat role:', this.chat?.role);
         this.cdr.detectChanges();
       },
       error: (error: unknown) => {
@@ -130,6 +133,22 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   toggleAttachmentMenu(): void {
     this.isAttachmentMenuOpen = !this.isAttachmentMenuOpen;
+    this.isChatMenuOpen = false;
+  }
+
+  toggleChatMenu(): void {
+    this.isChatMenuOpen = !this.isChatMenuOpen;
+    this.isAttachmentMenuOpen = false;
+  }
+
+  openImagePreview(imageUrl: string): void {
+    this.selectedImagePreviewUrl = imageUrl;
+    this.isAttachmentMenuOpen = false;
+    this.isChatMenuOpen = false;
+  }
+
+  closeImagePreview(): void {
+    this.selectedImagePreviewUrl = '';
   }
 
   onImageSelected(event: Event): void {
@@ -242,7 +261,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   sendLocation(latitude: number, longitude: number): void {
     const position = `${latitude},${longitude}`;
-
     const request = this.messageService.postMessage(undefined, this.chatid, undefined, position);
 
     if (!request) return;
@@ -270,10 +288,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/chats']);
-  }
-
-  toggleChatMenu(): void {
-    this.isChatMenuOpen = !this.isChatMenuOpen;
   }
 
   canDeleteChat(): boolean {

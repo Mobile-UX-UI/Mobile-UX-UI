@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { LoadingSpinner } from './components/loading-spinner/loading-spinner';
+import { ThemeService } from './services/system/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -9,4 +10,10 @@ import { LoadingSpinner } from './components/loading-spinner/loading-spinner';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {}
+export class App {
+  private themeService = inject(ThemeService);
+
+  constructor() {
+    this.themeService.initTheme();
+  }
+}

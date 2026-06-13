@@ -51,15 +51,15 @@
 
 .chat-form {
   display: flex;
-  gap: 16px;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
 
   margin-bottom: 16px;
 }
 
 .chat-form input[type='text'] {
-  flex: 1;
-
+  width: 100%;
   height: 52px;
   padding: 0 18px;
 
@@ -77,12 +77,13 @@
   align-items: center;
   gap: 10px;
 
-  min-height: 52px;
+  min-height: 44px;
 
   font-size: 15px;
   font-weight: 500;
 
   white-space: nowrap;
+  color: inherit;
 }
 
 .public-checkbox input[type='checkbox'] {

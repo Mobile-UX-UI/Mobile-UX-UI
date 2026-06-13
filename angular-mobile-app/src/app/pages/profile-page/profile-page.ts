@@ -6,14 +6,27 @@ import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
+import {
+  MatSlideToggleModule,
+  MatSlideToggleChange,
+} from '@angular/material/slide-toggle';
 
 import { AuthService } from '../../services/auth/auth.service';
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
 import { UserProfile } from '../../models/profile/user-profile';
 
+import { ThemeService } from '../../services/system/theme.service';
+
 @Component({
   selector: 'app-profile-page',
-  imports: [CommonModule, MatButtonModule, MatSnackBarModule, MatIconModule, BottomNavbar],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatSnackBarModule,
+    MatIconModule,
+    MatSlideToggleModule,
+    BottomNavbar,
+  ],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.css',
 })
@@ -22,6 +35,10 @@ export class ProfilePage implements OnInit {
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
   private platformId = inject(PLATFORM_ID);
+
+  private themeService = inject(ThemeService);
+
+  isDarkMode = false;
 
   profile: UserProfile | null = null;
 
@@ -36,6 +53,7 @@ export class ProfilePage implements OnInit {
     }
 
     this.profile = this.authService.getUserProfile();
+    this.isDarkMode = this.themeService.isDarkMode();
   }
 
   onLogout(): void {
@@ -98,5 +116,10 @@ export class ProfilePage implements OnInit {
         });
       },
     });
+  }
+
+  onDarkModeChange(event: MatSlideToggleChange): void {
+    this.isDarkMode = event.checked;
+    this.themeService.setDarkMode(event.checked);
   }
 }
