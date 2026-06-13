@@ -49,6 +49,9 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   isCameraOpen = false;
   isAttachmentMenuOpen = false;
 
+  isChatMenuOpen = false;
+  actionMessage = '';
+
   private cameraStream?: MediaStream;
 
   ngOnInit(): void {
@@ -68,7 +71,10 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     request.subscribe({
       next: (response) => {
-        this.chat = response.chats?.find((chat) => chat.chatid === this.chatid);
+        this.chat = response.chats?.find((chat) => String(chat.chatid) === String(this.chatid));
+
+        console.log('Current chat:', this.chat);
+        console.log('Current chat role:', this.chat?.role);
         this.cdr.detectChanges();
       },
       error: (error: unknown) => {
@@ -264,6 +270,62 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/chats']);
+  }
+
+  toggleChatMenu(): void {
+    this.isChatMenuOpen = !this.isChatMenuOpen;
+  }
+
+  canDeleteChat(): boolean {
+    return this.chat?.role === 'owner' || this.chat?.role === 'admin';
+  }
+
+  canLeaveChat(): boolean {
+    return this.chat?.role === 'member';
+  }
+
+  deleteChat(): void {
+    if (!this.chatid) return;
+
+    const confirmed = confirm('Do you really want to delete this chat?');
+
+    if (!confirmed) return;
+
+    const request = this.chatService.deleteChat(this.chatid);
+
+    if (!request) return;
+
+    request.subscribe({
+      next: () => {
+        this.router.navigate(['/chats']);
+      },
+      error: (error: unknown) => {
+        console.error('Delete chat error:', error);
+        this.actionMessage = 'Chat could not be deleted.';
+      },
+    });
+  }
+
+  leaveChat(): void {
+    if (!this.chatid) return;
+
+    const confirmed = confirm('Do you really want to leave this chat?');
+
+    if (!confirmed) return;
+
+    const request = this.chatService.leaveChat(this.chatid);
+
+    if (!request) return;
+
+    request.subscribe({
+      next: () => {
+        this.router.navigate(['/chats']);
+      },
+      error: (error: unknown) => {
+        console.error('Leave chat error:', error);
+        this.actionMessage = 'Chat could not be left.';
+      },
+    });
   }
 
   sendMessage(): void {

@@ -13,111 +13,144 @@
       <span>{{ chat?.role || '' }}</span>
     </div>
 
-    <button class="menu-button" type="button">
-      <mat-icon>more_vert</mat-icon>
-    </button>
+    <div class="chat-menu-wrapper">
+      <button class="menu-button" type="button" (click)="toggleChatMenu()">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+
+      @if (isChatMenuOpen) {
+      <div class="chat-menu">
+        @if (canDeleteChat()) {
+        <button type="button" class="chat-menu-item danger"
+          (click)="deleteChat()">
+          <mat-icon>delete</mat-icon>
+          <span>Delete chat</span>
+        </button>
+        }
+
+        @if (canLeaveChat()) {
+        <button type="button" class="chat-menu-item danger"
+          (click)="leaveChat()">
+          <mat-icon>logout</mat-icon>
+          <span>Leave chat</span>
+        </button>
+        }
+
+        @if (!canDeleteChat() && !canLeaveChat()) {
+        <div class="chat-menu-empty">No actions available</div>
+        }
+      </div>
+      }
+    </div>
   </header>
+  @if (actionMessage) {
+  <p class="chat-action-message">{{ actionMessage }}</p>
+  }
 
   <main class="messages-container" #messagesContainer>
     @for (message of messages; track message.id; let i = $index) {
-      @if (shouldShowDateSeparator(i)) {
-        <div class="date-separator">
-          {{ getDateSeparator(message.time) }}
-        </div>
+    @if (shouldShowDateSeparator(i)) {
+    <div class="date-separator">
+      {{ getDateSeparator(message.time) }}
+    </div>
+    }
+
+    <div class="message-row" [class.my-message-row]="isMyMessage(message)">
+      @if (!isMyMessage(message)) {
+      <div class="message-avatar">
+        {{ getInitials(message) }}
+      </div>
       }
 
-      <div class="message-row" [class.my-message-row]="isMyMessage(message)">
+      <div class="message-content">
         @if (!isMyMessage(message)) {
-          <div class="message-avatar">
-            {{ getInitials(message) }}
-          </div>
+        <div class="sender-name">
+          {{ message.usernick || message.username || message.userid }}
+        </div>
         }
 
-        <div class="message-content">
-          @if (!isMyMessage(message)) {
-            <div class="sender-name">
-              {{ message.usernick || message.username || message.userid }}
-            </div>
+        @if (message.text || message.photoid || message.position) {
+        <div class="message-bubble" [class.my-message]="isMyMessage(message)">
+          @if (message.photoid && photoUrls[message.photoid]) {
+          <img class="message-photo" [src]="photoUrls[message.photoid]"
+            alt="Photo" />
           }
 
-          @if (message.text || message.photoid || message.position) {
-            <div class="message-bubble" [class.my-message]="isMyMessage(message)">
-              @if (message.photoid && photoUrls[message.photoid]) {
-                <img class="message-photo" [src]="photoUrls[message.photoid]" alt="Photo" />
-              }
-
-              @if (message.position) {
-                <img
-                  class="message-map"
-                  [src]="getMapImageUrl(message.position)"
-                  alt="Location map"
-                  (click)="openMap(message.position)"
-                />
-              }
-
-              @if (message.text) {
-                <div class="message-text">
-                  {{ message.text }}
-                </div>
-              }
-            </div>
+          @if (message.position) {
+          <img
+            class="message-map"
+            [src]="getMapImageUrl(message.position)"
+            alt="Location map"
+            (click)="openMap(message.position)" />
           }
 
-          <div class="message-time">
-            {{ formatTime(message.time) }}
+          @if (message.text) {
+          <div class="message-text">
+            {{ message.text }}
           </div>
+          }
+        </div>
+        }
+
+        <div class="message-time">
+          {{ formatTime(message.time) }}
         </div>
       </div>
+    </div>
     } @empty {
-      <p class="empty-messages">No messages yet</p>
+    <p class="empty-messages">No messages yet</p>
     }
   </main>
 
   @if (selectedPhotoBase64) {
-    <div class="photo-preview">
-      <img [src]="selectedPhotoBase64" alt="Selected photo" />
+  <div class="photo-preview">
+    <img [src]="selectedPhotoBase64" alt="Selected photo" />
 
-      <button type="button" class="remove-photo-button" (click)="removeSelectedPhoto()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
+    <button type="button" class="remove-photo-button"
+      (click)="removeSelectedPhoto()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
   }
 
   @if (isAttachmentMenuOpen) {
-    <div class="attachment-menu">
-      <button type="button" class="attachment-option" (click)="imageInput.click()">
-        <mat-icon>image</mat-icon>
-        <span>Photo</span>
-      </button>
+  <div class="attachment-menu">
+    <button type="button" class="attachment-option"
+      (click)="imageInput.click()">
+      <mat-icon>image</mat-icon>
+      <span>Photo</span>
+    </button>
 
-      <button type="button" class="attachment-option" (click)="openCamera()">
-        <mat-icon>photo_camera</mat-icon>
-        <span>Camera</span>
-      </button>
+    <button type="button" class="attachment-option" (click)="openCamera()">
+      <mat-icon>photo_camera</mat-icon>
+      <span>Camera</span>
+    </button>
 
-      <button type="button" class="attachment-option" (click)="shareLocation()">
-        <mat-icon>location_on</mat-icon>
-        <span>Location</span>
-      </button>
-    </div>
+    <button type="button" class="attachment-option" (click)="shareLocation()">
+      <mat-icon>location_on</mat-icon>
+      <span>Location</span>
+    </button>
+  </div>
   }
 
   @if (isCameraOpen) {
-    <div class="camera-overlay">
-      <div class="camera-box">
-        <video #cameraPreview autoplay playsinline></video>
+  <div class="camera-overlay">
+    <div class="camera-box">
+      <video #cameraPreview autoplay playsinline></video>
 
-        <div class="camera-actions">
-          <button type="button" class="camera-button secondary" (click)="closeCamera()">
-            Close
-          </button>
+      <div class="camera-actions">
+        <button type="button" class="camera-button secondary"
+          (click)="closeCamera()">
+          Close
+        </button>
 
-          <button type="button" class="camera-button primary" (click)="takePhoto()">
-            Take photo
-          </button>
-        </div>
+        <button type="button" class="camera-button primary"
+          (click)="takePhoto()">
+          Take photo
+        </button>
       </div>
     </div>
+  </div>
   }
 
   <form class="message-input-bar" (submit)="sendMessage()">
@@ -126,10 +159,10 @@
       type="file"
       accept="image/png,image/jpeg"
       hidden
-      (change)="onImageSelected($event)"
-    />
+      (change)="onImageSelected($event)" />
 
-    <button type="button" class="small-icon-button" (click)="toggleAttachmentMenu()">
+    <button type="button" class="small-icon-button"
+      (click)="toggleAttachmentMenu()">
       <mat-icon>attach_file</mat-icon>
     </button>
 
@@ -137,8 +170,7 @@
       type="text"
       name="newMessageText"
       [(ngModel)]="newMessageText"
-      placeholder="Type message here..."
-    />
+      placeholder="Type message here..." />
 
     <button type="submit" class="send-button">
       <mat-icon>send</mat-icon>
