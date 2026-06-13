@@ -1,7 +1,14 @@
+import { PLATFORM_ID} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
+import { InvitationService } from '../../services/invitation/invitation.service';
+import { Invitation } from '../../models/invitations/invitation';
+
+
 
 type InvitationTab = 'received' | 'sent';
 
@@ -11,49 +18,108 @@ type InvitationTab = 'received' | 'sent';
   templateUrl: './invitations-page.html',
   styleUrl: './invitations-page.css',
 })
-export class InvitationsPage {
-  public selectedTab: InvitationTab = 'received';
+export class InvitationsPage implements OnInit {
+  private invitationService = inject(InvitationService);
 
-  public receivedInvitations: ReceivedInvitationView[] = [
-    {
-      sentOn: '04.05.2026, 20:15',
-      from: 'Max Müller',
-      chatname: 'Main Chat',
-    },
-    {
-      sentOn: '05.05.2026, 17:40',
-      from: 'Emma Schneider',
-      chatname: 'Project Group',
-    },
-    {
-      sentOn: '06.05.2026, 11:25',
-      from: 'Dominik Becker',
-      chatname: 'Gaming Chat',
-    },
-  ];
+  selectedTab: InvitationTab = 'received';
 
-  public sentInvitations: SentInvitationView[] = [
-    {
-      sentOn: '04.05.2026, 20:15',
-      to: 'Emma Schneider',
-      chatname: 'Main Chat',
-      status: 'accepted',
-    },
-    {
-      sentOn: '05.05.2026, 18:40',
-      to: 'Dominik Becker',
-      chatname: 'Project Group',
-      status: 'pending',
-    },
-    {
-      sentOn: '06.05.2026, 12:10',
-      to: 'Max Müller',
-      chatname: 'Gaming Chat',
-      status: 'declined',
-    },
-  ];
+  private platformId = inject(PLATFORM_ID);
 
-  public selectTab(tab: InvitationTab): void {
+  invitations: Invitation[] = [];
+  visibleInvitations: Invitation[] = [];
+
+  hiddenInvitationIds: string[] = [];
+  errorMessage = '';
+
+  ngOnInit(): void {
+    this.hiddenInvitationIds = this.loadHiddenInvitationIds();
+    this.loadInvitations();
+  }
+
+  selectTab(tab: InvitationTab): void {
     this.selectedTab = tab;
   }
+
+  loadInvitations(): void {
+    this.errorMessage = '';
+
+    const request = this.invitationService.getInvites();
+
+    if (!request) {
+      this.errorMessage = 'You are not logged in.';
+      return;
+    }
+
+    request.subscribe({
+      next: (response) => {
+        this.invitations = response.invites ?? [];
+        this.updateVisibleInvitations();
+      },
+      error: (error) => {
+        console.error('Get invitations error:', error);
+        this.errorMessage = 'Invitations could not be loaded.';
+      },
+    });
+  }
+
+  acceptInvitation(chatid: string): void {
+    const request = this.invitationService.acceptInvite(String(chatid));
+
+    if (!request) return;
+
+    request.subscribe({
+      next: () => {
+        this.hideInvitation(chatid);
+        this.errorMessage = '';
+      },
+      error: (error) => {
+        console.error('Accept invitation error:', error);
+        this.errorMessage = 'Invitation could not be accepted.';
+      },
+    });
+  }
+
+  declineInvitation(chatid: string): void {
+    this.hideInvitation(chatid);
+    this.errorMessage = '';
+  }
+
+  private hideInvitation(chatid: string): void {
+    const id = String(chatid);
+
+    if (!this.hiddenInvitationIds.includes(id)) {
+      this.hiddenInvitationIds = [...this.hiddenInvitationIds, id];
+    }
+
+    if (isPlatformBrowser(this.platformId)) {
+  sessionStorage.setItem(
+    'hidden_invitation_ids',
+    JSON.stringify(this.hiddenInvitationIds),
+  );
+}
+
+    this.updateVisibleInvitations();
+  }
+
+  private updateVisibleInvitations(): void {
+    this.visibleInvitations = this.invitations.filter(
+      (invitation) => !this.hiddenInvitationIds.includes(String(invitation.chatid)),
+    );
+  }
+
+  private loadHiddenInvitationIds(): string[] {
+  if (!isPlatformBrowser(this.platformId)) {
+    return [];
+  }
+
+  const saved = sessionStorage.getItem('hidden_invitation_ids');
+
+  if (!saved) return [];
+
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return [];
+  }
+}
 }

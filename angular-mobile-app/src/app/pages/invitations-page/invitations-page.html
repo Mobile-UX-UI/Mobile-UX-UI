@@ -1,6 +1,7 @@
 <div class="page-container">
   <div class="page-content">
     <h2>Invitations</h2>
+
     <div class="toggle-buttons">
       <button
         [class.active-btn]="selectedTab === 'received'"
@@ -19,30 +20,59 @@
       </button>
     </div>
 
+    @if (errorMessage) {
+      <p class="error-text">{{ errorMessage }}</p>
+    }
+
     @if (selectedTab === 'received') {
-      @for (invitation of receivedInvitations; track invitation.from + invitation.chatname) {
-        <div class="invitation-card">
-          <div>Sent on: {{ invitation.sentOn }}</div>
+      <div class="invitation-list">
+        @for (invitation of visibleInvitations; track invitation.chatid) {
+          <div class="invitation-card">
+            <div class="invitation-info">
+              <strong>{{ invitation.chatname }}</strong>
 
-          <div>From: {{ invitation.from }}</div>
+              <span>
+                From:
+                {{ invitation.owner.nickname }}
+              </span>
 
-          <div>Chat: {{ invitation.chatname }}</div>
-        </div>
-      }
+              <span>
+                {{ invitation.owner.fullname }}
+              </span>
+            </div>
+
+            <div class="invitation-actions">
+              <button
+                type="button"
+                class="accept-button"
+                (click)="acceptInvitation(invitation.chatid)"
+              >
+                Accept
+              </button>
+
+              <button
+                type="button"
+                class="decline-button"
+                (click)="declineInvitation(invitation.chatid)"
+              >
+                Decline
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty-text">No invitations found</p>
+        }
+      </div>
     }
 
     @if (selectedTab === 'sent') {
-      @for (invitation of sentInvitations; track invitation.to + invitation.chatname) {
-        <div class="invitation-card sent-card">
-          <div>Sent on: {{ invitation.sentOn }}</div>
+      <div class="placeholder-card">
+        <p>No sent invitations available.</p>
 
-          <div>To: {{ invitation.to }}</div>
-
-          <div>Chat: {{ invitation.chatname }}</div>
-
-          <div>Status: {{ invitation.status }}</div>
-        </div>
-      }
+        <small>
+          The current server API does not provide a sent invitations endpoint.
+        </small>
+      </div>
     }
   </div>
 

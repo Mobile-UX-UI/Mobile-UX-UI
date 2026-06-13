@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, delay, distinctUntilChanged } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -6,11 +7,16 @@ import { Injectable, signal } from '@angular/core';
 export class LoadingService {
   private activeRequests = 0;
 
-  public isLoading = signal(false);
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+
+  public isLoading$ = this.loadingSubject.asObservable().pipe(
+    distinctUntilChanged(),
+    delay(0),
+  );
 
   public show(): void {
     this.activeRequests++;
-    this.isLoading.set(true);
+    this.loadingSubject.next(true);
   }
 
   public hide(): void {
@@ -18,7 +24,7 @@ export class LoadingService {
 
     if (this.activeRequests <= 0) {
       this.activeRequests = 0;
-      this.isLoading.set(false);
+      this.loadingSubject.next(false);
     }
   }
 }
