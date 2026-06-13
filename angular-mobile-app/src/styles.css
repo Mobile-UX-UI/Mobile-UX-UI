@@ -196,3 +196,9 @@ body.dark-mode {
   --chat-card-bg: #242424;
   --chat-card-border: #7b2cbf;
 }
+
+body.dark-mode .offline-banner {
+  background: #3a2f12 !important;
+  color: #ffdd75 !important;
+  border: 1px solid #6b5310 !important;
+}

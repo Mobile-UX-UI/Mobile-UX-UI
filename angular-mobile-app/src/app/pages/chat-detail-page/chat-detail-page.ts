@@ -89,11 +89,22 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   loadMessages(): void {
     const request = this.messageService.getMessages(undefined, this.chatid);
 
-    if (!request) return;
+    if (!request) {
+      this.loadCachedMessages();
+      return;
+    }
 
     request.subscribe({
       next: (response) => {
         this.messages = [...(response.messages ?? [])];
+        console.log(
+          'Saving messages under key:',
+          this.getCachedMessagesKey(),
+          this.messages.length,
+        );
+
+        localStorage.setItem(this.getCachedMessagesKey(), JSON.stringify(this.messages));
+
         this.loadPhotos();
         this.cdr.detectChanges();
 
@@ -103,8 +114,35 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       },
       error: (error: unknown) => {
         console.error('Get messages error:', error);
+        this.loadCachedMessages();
       },
     });
+  }
+
+  private loadCachedMessages(): void {
+    const cachedMessages = localStorage.getItem(this.getCachedMessagesKey());
+
+    if (!cachedMessages) {
+      this.messages = [];
+      this.cdr.detectChanges();
+      return;
+    }
+
+    try {
+      this.messages = JSON.parse(cachedMessages) as ApiMessage[];
+    } catch {
+      this.messages = [];
+    }
+
+    this.cdr.detectChanges();
+
+    setTimeout(() => {
+      this.scrollToBottom();
+    }, 0);
+  }
+
+  private getCachedMessagesKey(): string {
+    return `cached_messages_${this.chatid}`;
   }
 
   loadPhotos(): void {

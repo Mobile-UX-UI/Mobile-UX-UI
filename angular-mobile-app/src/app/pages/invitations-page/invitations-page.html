@@ -2,77 +2,79 @@
   <div class="page-content">
     <h2>Invitations</h2>
 
+    @if (isOfflineMode) {
+    <div class="offline-banner">
+      Offline mode – showing cached invitations
+    </div>
+    }
+
     <div class="toggle-buttons">
       <button
         [class.active-btn]="selectedTab === 'received'"
         [class.inactive-btn]="selectedTab !== 'received'"
-        (click)="selectTab('received')"
-      >
+        (click)="selectTab('received')">
         My Invitations
       </button>
 
       <button
         [class.active-btn]="selectedTab === 'sent'"
         [class.inactive-btn]="selectedTab !== 'sent'"
-        (click)="selectTab('sent')"
-      >
+        (click)="selectTab('sent')">
         Sent
       </button>
     </div>
 
     @if (errorMessage) {
-      <p class="error-text">{{ errorMessage }}</p>
+    <p class="error-text">{{ errorMessage }}</p>
     }
 
     @if (selectedTab === 'received') {
-      <div class="invitation-list">
-        @for (invitation of visibleInvitations; track invitation.chatid) {
-          <div class="invitation-card">
-            <div class="invitation-info">
-              <strong>{{ invitation.chatname }}</strong>
+    <div class="invitation-list">
+      @for (invitation of visibleInvitations; track invitation.chatid) {
+      <div class="invitation-card">
+        <div class="invitation-info">
+          <strong>{{ invitation.chatname }}</strong>
 
-              <span>
-                From:
-                {{ invitation.owner.nickname }}
-              </span>
+          <span>
+            From:
+            {{ invitation.owner.nickname }}
+          </span>
 
-              <span>
-                {{ invitation.owner.fullname }}
-              </span>
-            </div>
+          <span>
+            {{ invitation.owner.fullname }}
+          </span>
+        </div>
 
-            <div class="invitation-actions">
-              <button
-                type="button"
-                class="accept-button"
-                (click)="acceptInvitation(invitation.chatid)"
-              >
-                Accept
-              </button>
+        <div class="invitation-actions">
+          <button
+            type="button"
+            class="accept-button"
+            (click)="acceptInvitation(invitation.chatid)">
+            Accept
+          </button>
 
-              <button
-                type="button"
-                class="decline-button"
-                (click)="declineInvitation(invitation.chatid)"
-              >
-                Decline
-              </button>
-            </div>
-          </div>
-        } @empty {
-          <p class="empty-text">No invitations found</p>
-        }
+          <button
+            type="button"
+            class="decline-button"
+            (click)="declineInvitation(invitation.chatid)">
+            Decline
+          </button>
+        </div>
       </div>
+      } @empty {
+      <p class="empty-text">No invitations found</p>
+      }
+    </div>
     }
 
     @if (selectedTab === 'sent') {
-      <div class="placeholder-card">
-        <p>No sent invitations available.</p>
+    <div class="placeholder-card">
+      <p>No sent invitations available.</p>
 
-        <small>
-          The current server API does not provide a sent invitations endpoint.
-        </small>
-      </div>
+      <small>
+        The current server API does not provide a sent invitations endpoint.
+      </small>
+    </div>
     }
   </div>
 

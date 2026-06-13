@@ -109,3 +109,16 @@
 .chat-list {
   margin-top: 18px;
 }
+
+.offline-banner {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+
+  border-radius: 14px;
+
+  background: #fff3cd;
+  color: #6b4f00;
+
+  font-size: 13px;
+  font-weight: 600;
+}

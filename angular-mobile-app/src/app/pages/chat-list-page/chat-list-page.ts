@@ -21,8 +21,12 @@ export class ChatListPage implements OnInit {
   private chatService = inject(ChatService);
   private cdr = inject(ChangeDetectorRef);
 
+  private readonly cachedChatsKey = 'cached_chats';
+
   chats: Chat[] = [];
   searchText = '';
+
+  isOfflineMode = false;
 
   ngOnInit(): void {
     this.loadChats();
@@ -32,20 +36,46 @@ export class ChatListPage implements OnInit {
     const request = this.chatService.getChats();
 
     if (!request) {
+      this.loadCachedChats();
       return;
     }
 
     request.subscribe({
       next: (response) => {
         this.chats = [...(response.chats ?? [])];
+        this.isOfflineMode = false;
+
+        localStorage.setItem(this.cachedChatsKey, JSON.stringify(this.chats));
 
         this.cdr.markForCheck();
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Get chats error:', error);
+        this.loadCachedChats();
       },
     });
+  }
+
+  loadCachedChats(): void {
+    const cachedChats = localStorage.getItem(this.cachedChatsKey);
+
+    if (!cachedChats) {
+      this.chats = [];
+      this.isOfflineMode = true;
+      return;
+    }
+
+    try {
+      this.chats = JSON.parse(cachedChats) as Chat[];
+      this.isOfflineMode = true;
+    } catch {
+      this.chats = [];
+      this.isOfflineMode = true;
+    }
+
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   get filteredChats(): Chat[] {

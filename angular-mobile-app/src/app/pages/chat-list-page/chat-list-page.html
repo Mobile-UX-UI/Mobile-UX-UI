@@ -2,9 +2,16 @@
   <div class="page-content">
     <h2>Chats</h2>
 
+    @if (isOfflineMode) {
+    <div class="offline-banner">
+      Offline mode – showing cached chats
+    </div>
+    }
+
     <div class="search-container">
       <form class="search-bar">
-        <input type="text" name="searchText" [(ngModel)]="searchText" placeholder="Search" />
+        <input type="text" name="searchText" [(ngModel)]="searchText"
+          placeholder="Search" />
 
         <button type="submit" class="search-button">
           <mat-icon>search</mat-icon>
@@ -18,9 +25,10 @@
 
     <div class="chat-list">
       @for (chat of filteredChats; track chat.chatid) {
-        <app-chat-list-item [chat]="chat" (chatClicked)="openChat($event)"></app-chat-list-item>
+      <app-chat-list-item [chat]="chat"
+        (chatClicked)="openChat($event)"></app-chat-list-item>
       } @empty {
-        <p class="empty-text">No chats found</p>
+      <p class="empty-text">No chats found</p>
       }
     </div>
 
