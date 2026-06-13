@@ -1,4 +1,6 @@
 export interface ApiProfile {
-  hash: string;
+  userid: string;
+  fullname: string;
   nickname: string;
+  hash: string;
 }

@@ -7,10 +7,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { AuthService } from '../../services/auth/auth.service';
-import { ProfileService } from '../../services/profile/profile.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { HttpErrorResponse } from '@angular/common/http';
+
+import { AuthService } from '../../services/auth/auth.service';
+import { ProfileService } from '../../services/profile/profile.service';
 
 @Component({
   selector: 'app-login-page',
@@ -88,11 +89,11 @@ export class LoginPage {
             );
 
             this.authService.saveUserProfile({
-              userid,
+              userid: currentProfile?.userid ?? userid,
               firstName: '',
               lastName: '',
               nickname: currentProfile?.nickname ?? userid,
-              fullname: userid,
+              fullname: currentProfile?.fullname ?? userid,
               hash: response.hash,
             });
 
