@@ -273,6 +273,17 @@ body.dark-mode .offline-banner {
   border: 1px solid #6b5310 !important;
 }
 
+body.dark-mode .active-btn {
+  background: #c77dff !important;
+  color: #121212 !important;
+}
+
+body.dark-mode .inactive-btn {
+  background: #1e1e1e !important;
+  color: #c77dff !important;
+  border-color: #c77dff !important;
+}
+
 body.dark-mode .action-button,
 body.dark-mode .action-button mat-icon,
 body.dark-mode .action-item span {
