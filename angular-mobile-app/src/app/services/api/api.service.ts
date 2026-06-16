@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
@@ -30,6 +30,7 @@ export class ApiService {
 
     return this.http.get<T>(this.baseUrl, {
       params: httpParams,
+      headers: this.getCacheHeaders(options),
     });
   }
 
@@ -59,7 +60,18 @@ export class ApiService {
 
     return this.http.get(this.baseUrl, {
       params: httpParams,
+      headers: this.getCacheHeaders(options),
       responseType: 'blob',
+    });
+  }
+
+  private getCacheHeaders(options?: { noCache?: boolean }): HttpHeaders | undefined {
+    if (!options?.noCache) return undefined;
+
+    return new HttpHeaders({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
     });
   }
 }

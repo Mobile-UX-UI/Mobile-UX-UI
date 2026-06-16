@@ -71,8 +71,9 @@ export class InvitationsPage implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.hideInvitation(chatid);
+        this.removeInvitation(chatid);
         this.errorMessage = '';
+        this.loadInvitations();
       },
       error: (error) => {
         console.error('Accept invitation error:', error);
@@ -84,6 +85,16 @@ export class InvitationsPage implements OnInit {
   declineInvitation(chatid: string): void {
     this.hideInvitation(chatid);
     this.errorMessage = '';
+  }
+
+  private removeInvitation(chatid: string): void {
+    const id = String(chatid);
+
+    this.invitations = this.invitations.filter(
+      (invitation) => String(invitation.chatid) !== id,
+    );
+    this.saveCachedInvitations();
+    this.updateVisibleInvitations();
   }
 
   private hideInvitation(chatid: string): void {
