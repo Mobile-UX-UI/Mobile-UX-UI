@@ -68,6 +68,34 @@
   color: #777;
 }
 
+.draft-row {
+  margin-top: 6px;
+
+  display: flex;
+  gap: 4px;
+
+  min-width: 0;
+
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.draft-label {
+  color: #7b2cbf;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.draft-text {
+  min-width: 0;
+
+  color: #666;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chat-item:active {
   transform: scale(0.98);
 }

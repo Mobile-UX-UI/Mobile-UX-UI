@@ -37,6 +37,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
+  private readonly chatDraftsKey = 'chat_drafts';
 
   chatid = '';
   chat?: Chat;
@@ -58,11 +59,13 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.chatid = this.route.snapshot.paramMap.get('chatid') ?? '';
+    this.newMessageText = this.getDraftText();
     this.loadChat();
     this.loadMessages();
   }
 
   ngOnDestroy(): void {
+    this.saveDraft();
     this.closeCamera();
 
     Object.values(this.photoUrls).forEach((url) => {
@@ -399,6 +402,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     request.subscribe({
       next: () => {
         this.newMessageText = '';
+        this.clearDraft();
         this.selectedPhotoBase64 = '';
         this.loadMessages();
       },
@@ -410,6 +414,10 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   removeSelectedPhoto(): void {
     this.selectedPhotoBase64 = '';
+  }
+
+  onDraftChange(): void {
+    this.saveDraft();
   }
 
   getInitials(message: ApiMessage): string {
@@ -516,5 +524,40 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     if (!container) return;
 
     container.scrollTop = container.scrollHeight;
+  }
+
+  private getDraftText(): string {
+    return this.getDrafts()[this.chatid] ?? '';
+  }
+
+  private saveDraft(): void {
+    const drafts = this.getDrafts();
+    const text = this.newMessageText;
+
+    if (text.trim()) {
+      drafts[this.chatid] = text;
+    } else {
+      delete drafts[this.chatid];
+    }
+
+    localStorage.setItem(this.chatDraftsKey, JSON.stringify(drafts));
+  }
+
+  private clearDraft(): void {
+    const drafts = this.getDrafts();
+    delete drafts[this.chatid];
+    localStorage.setItem(this.chatDraftsKey, JSON.stringify(drafts));
+  }
+
+  private getDrafts(): Record<string, string> {
+    const savedDrafts = localStorage.getItem(this.chatDraftsKey);
+
+    if (!savedDrafts) return {};
+
+    try {
+      return JSON.parse(savedDrafts) as Record<string, string>;
+    } catch {
+      return {};
+    }
   }
 }

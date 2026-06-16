@@ -185,6 +185,7 @@
       type="text"
       name="newMessageText"
       [(ngModel)]="newMessageText"
+      (ngModelChange)="onDraftChange()"
       placeholder="Type message here..."
     />
 

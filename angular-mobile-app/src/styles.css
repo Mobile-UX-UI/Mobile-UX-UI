@@ -204,6 +204,14 @@ body.dark-mode app-chat-list-item span {
   color: #d7c6ee !important;
 }
 
+body.dark-mode app-chat-list-item .draft-label {
+  color: #c77dff !important;
+}
+
+body.dark-mode app-chat-list-item .draft-text {
+  color: #d7c6ee !important;
+}
+
 body.dark-mode app-chat-list-item mat-icon {
   color: #c77dff !important;
 }

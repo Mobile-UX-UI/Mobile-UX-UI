@@ -21,5 +21,12 @@
         <span class="not-joined">Not joined</span>
       }
     </div>
+
+    @if (trimmedDraftText) {
+      <div class="draft-row">
+        <span class="draft-label">Draft:</span>
+        <span class="draft-text">{{ trimmedDraftText }}</span>
+      </div>
+    }
   </div>
 </div>

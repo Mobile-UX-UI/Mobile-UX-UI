@@ -11,6 +11,7 @@ import { Chat } from '../../models/chat/chat';
 })
 export class ChatListItem {
   chat = input.required<Chat>();
+  draftText = input('');
   chatClicked = output<Chat>();
 
   avatarColors = ['#B429F9', '#9C43F8', '#855DF7', '#6D77F6', '#5591F5', '#3EABF4', '#26C5F3'];
@@ -27,6 +28,10 @@ export class ChatListItem {
     }
 
     return this.avatarColors[sum % this.avatarColors.length];
+  }
+
+  get trimmedDraftText(): string {
+    return this.draftText().trim();
   }
 
   onClick(): void {

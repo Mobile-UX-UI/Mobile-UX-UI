@@ -26,6 +26,7 @@
     <div class="chat-list">
       @for (chat of filteredChats; track chat.chatid) {
       <app-chat-list-item [chat]="chat"
+        [draftText]="getDraftText(chat.chatid)"
         (chatClicked)="openChat($event)"></app-chat-list-item>
       } @empty {
       <p class="empty-text">No chats found</p>

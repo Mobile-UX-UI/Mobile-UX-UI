@@ -22,6 +22,7 @@ export class ChatListPage implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   private readonly cachedChatsKey = 'cached_chats';
+  private readonly chatDraftsKey = 'chat_drafts';
 
   chats: Chat[] = [];
   searchText = '';
@@ -98,5 +99,22 @@ export class ChatListPage implements OnInit {
     }
 
     this.router.navigate(['/chats', chat.chatid]);
+  }
+
+  getDraftText(chatid: string): string {
+    const drafts = this.getDrafts();
+    return drafts[String(chatid)] ?? '';
+  }
+
+  private getDrafts(): Record<string, string> {
+    const savedDrafts = localStorage.getItem(this.chatDraftsKey);
+
+    if (!savedDrafts) return {};
+
+    try {
+      return JSON.parse(savedDrafts) as Record<string, string>;
+    } catch {
+      return {};
+    }
   }
 }
