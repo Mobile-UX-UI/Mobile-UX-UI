@@ -60,7 +60,7 @@ export class ProfilePage implements OnInit {
     const result = this.authService.logout();
 
     const finishLogout = () => {
-      this.authService.clearAll();
+      this.authService.clearSession();
       this.router.navigate(['/login']);
     };
 

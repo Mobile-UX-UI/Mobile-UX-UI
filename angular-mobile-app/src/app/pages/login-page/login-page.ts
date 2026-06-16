@@ -12,6 +12,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { AuthService } from '../../services/auth/auth.service';
 import { ProfileService } from '../../services/profile/profile.service';
+import { AuthResponse } from '../../models/auth/auth-response.model';
+import { UserProfile } from '../../models/profile/user-profile';
 
 @Component({
   selector: 'app-login-page',
@@ -59,7 +61,7 @@ export class LoginPage {
     this.authService.login(userid, password).subscribe({
       next: (response) => {
         if (response?.status !== 'ok' || !response?.token) {
-          this.authService.clearAll();
+          this.authService.clearSession();
           this.showError(response?.message ?? 'Login failed');
           return;
         }
@@ -69,16 +71,16 @@ export class LoginPage {
         const profilesRequest = this.profileService.getProfiles();
 
         if (!profilesRequest) {
-          this.authService.saveUserProfile({
+          const profile = {
             userid,
             firstName: '',
             lastName: '',
             nickname: userid,
             fullname: userid,
             hash: response.hash,
-          });
+          };
 
-          this.router.navigate(['/chats']);
+          void this.finishLogin(userid, password, response, profile);
           return;
         }
 
@@ -88,39 +90,44 @@ export class LoginPage {
               (profile) => profile.hash === response.hash,
             );
 
-            this.authService.saveUserProfile({
+            const profile = {
               userid: currentProfile?.userid ?? userid,
               firstName: '',
               lastName: '',
               nickname: currentProfile?.nickname ?? userid,
               fullname: currentProfile?.fullname ?? userid,
               hash: response.hash,
-            });
+            };
 
-            this.router.navigate(['/chats']);
+            void this.finishLogin(userid, password, response, profile);
           },
 
           error: () => {
-            this.authService.saveUserProfile({
+            const profile = {
               userid,
               firstName: '',
               lastName: '',
               nickname: userid,
               fullname: userid,
               hash: response.hash,
-            });
+            };
 
-            this.router.navigate(['/chats']);
+            void this.finishLogin(userid, password, response, profile);
           },
         });
       },
 
-      error: (error: HttpErrorResponse) => {
-        this.authService.clearAll();
+      error: async (error: HttpErrorResponse) => {
+        if (error.status === 0 && (await this.authService.loginOffline(userid, password))) {
+          this.showSuccess('Offline login');
+          this.router.navigate(['/chats']);
+          return;
+        }
 
         const message =
           typeof error.error === 'string' ? error.error : (error?.error?.message ?? 'Login failed');
 
+        this.authService.clearSession();
         this.showError(message);
       },
     });
@@ -139,5 +146,29 @@ export class LoginPage {
         panelClass: ['error-snackbar'],
       });
     });
+  }
+
+  private showSuccess(message: string): void {
+    setTimeout(() => {
+      this.snackBar.open(message, 'OK', {
+        duration: 3000,
+        verticalPosition: 'bottom',
+        horizontalPosition: 'center',
+        panelClass: ['success-snackbar'],
+      });
+    });
+  }
+
+  private async finishLogin(
+    userid: string,
+    password: string,
+    response: AuthResponse,
+    profile: UserProfile,
+  ): Promise<void> {
+    if (!response.token) return;
+
+    this.authService.saveUserProfile(profile);
+    await this.authService.saveOfflineLogin(userid, password, response.token, response.hash, profile);
+    this.router.navigate(['/chats']);
   }
 }

@@ -16,6 +16,7 @@ export class AuthService {
 
   private readonly tokenKey = 'auth_token';
   private readonly profileKey = 'user_profile';
+  private readonly offlineLoginKey = 'offline_login';
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -81,6 +82,63 @@ export class AuthService {
     localStorage.setItem(this.profileKey, JSON.stringify(profile));
   }
 
+  public async saveOfflineLogin(
+    userid: string,
+    password: string,
+    token: string,
+    hash: string | undefined,
+    profile: UserProfile,
+  ): Promise<void> {
+    if (!this.isBrowser()) return;
+
+    const passwordHash = await this.createPasswordHash(userid, password);
+
+    localStorage.setItem(
+      this.offlineLoginKey,
+      JSON.stringify({
+        userid,
+        passwordHash,
+        token: token.trim(),
+        hash,
+        profile,
+      }),
+    );
+  }
+
+  public async loginOffline(userid: string, password: string): Promise<boolean> {
+    if (!this.isBrowser()) return false;
+
+    const cachedLogin = localStorage.getItem(this.offlineLoginKey);
+
+    if (!cachedLogin) return false;
+
+    try {
+      const parsed = JSON.parse(cachedLogin) as {
+        userid?: string;
+        passwordHash?: string;
+        token?: string;
+        profile?: UserProfile;
+      };
+
+      const passwordHash = await this.createPasswordHash(userid, password);
+
+      if (
+        parsed.userid !== userid ||
+        parsed.passwordHash !== passwordHash ||
+        !parsed.token ||
+        !parsed.profile
+      ) {
+        return false;
+      }
+
+      this.saveToken(parsed.token);
+      this.saveUserProfile(parsed.profile);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   public getUserProfile(): UserProfile | null {
     if (!this.isBrowser()) return null;
 
@@ -103,6 +161,13 @@ export class AuthService {
   public clearAll(): void {
     if (!this.isBrowser()) return;
 
+    this.clearSession();
+    localStorage.removeItem(this.offlineLoginKey);
+  }
+
+  public clearSession(): void {
+    if (!this.isBrowser()) return;
+
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profileKey);
   }
@@ -113,5 +178,14 @@ export class AuthService {
 
   public isLoggedIn(): boolean {
     return !!this.getToken();
+  }
+
+  private async createPasswordHash(userid: string, password: string): Promise<string> {
+    const data = new TextEncoder().encode(`${userid}:${password}`);
+    const buffer = await crypto.subtle.digest('SHA-256', data);
+
+    return Array.from(new Uint8Array(buffer))
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('');
   }
 }
