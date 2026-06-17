@@ -4,7 +4,7 @@
 
     @if (isOfflineMode) {
     <div class="offline-banner">
-      Offline
+      {{ connectionMessage }}
     </div>
     }
 
@@ -27,6 +27,9 @@
       @for (chat of filteredChats; track chat.chatid) {
       <app-chat-list-item [chat]="chat"
         [draftText]="getDraftText(chat.chatid)"
+        [lastMessageText]="getLastMessageText(chat.chatid)"
+        [unreadCount]="getUnreadCount(chat.chatid)"
+        [hasUnreadMessages]="hasUnreadMessages(chat.chatid)"
         (chatClicked)="openChat($event)"></app-chat-list-item>
       } @empty {
       <p class="empty-text">No chats found</p>

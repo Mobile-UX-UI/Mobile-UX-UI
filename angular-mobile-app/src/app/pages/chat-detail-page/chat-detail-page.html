@@ -11,6 +11,7 @@
     <div class="chat-title">
       <strong>{{ chat?.chatname || 'Chat' }}</strong>
       <span>{{ chat?.role || '' }}</span>
+      <small>{{ getMemberPreview() }}</small>
     </div>
 
     <div class="chat-menu-wrapper">
@@ -20,6 +21,11 @@
 
       @if (isChatMenuOpen) {
         <div class="chat-menu">
+          <button type="button" class="chat-menu-item" (click)="openMembersList()">
+            <mat-icon>group</mat-icon>
+            <span>Members</span>
+          </button>
+
           @if (canDeleteChat()) {
             <button type="button" class="chat-menu-item danger" (click)="deleteChat()">
               <mat-icon>delete</mat-icon>
@@ -35,7 +41,7 @@
           }
 
           @if (!canDeleteChat() && !canLeaveChat()) {
-            <div class="chat-menu-empty">No actions available</div>
+            <div class="chat-menu-empty">No more actions available</div>
           }
         </div>
       }
@@ -186,6 +192,42 @@
         alt="Preview"
         (click)="$event.stopPropagation()"
       />
+    </div>
+  }
+
+  @if (isMembersListOpen) {
+    <div class="members-overlay" (click)="closeMembersList()">
+      <section class="members-panel" (click)="$event.stopPropagation()">
+        <div class="members-panel-header">
+          <div>
+            <strong>Members</strong>
+            <span>{{ getMembers().length }} participants</span>
+          </div>
+
+          <button type="button" class="members-close-button" (click)="closeMembersList()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="members-list">
+          @for (member of getMembers(); track member.hash || member.userid) {
+            <div class="member-row">
+              <div class="member-avatar">
+                {{ getProfileInitial(member) }}
+              </div>
+
+              <div class="member-info">
+                <strong>{{ getProfileDisplayName(member) }}</strong>
+                <span>{{ member.fullname || member.userid }}</span>
+              </div>
+
+              <span class="member-role">{{ getMemberRole(member) }}</span>
+            </div>
+          } @empty {
+            <p class="empty-members">No members found</p>
+          }
+        </div>
+      </section>
     </div>
   }
 

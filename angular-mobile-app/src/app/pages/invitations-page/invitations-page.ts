@@ -26,6 +26,7 @@ export class InvitationsPage implements OnInit {
 
   errorMessage = '';
   isOfflineMode = false;
+  connectionMessage = '';
 
   ngOnInit(): void {
     this.loadInvitations();
@@ -49,6 +50,7 @@ export class InvitationsPage implements OnInit {
       next: (response) => {
         this.invitations = response.invites ?? [];
         this.isOfflineMode = false;
+        this.connectionMessage = '';
 
         this.saveCachedInvitations();
 
@@ -125,6 +127,7 @@ export class InvitationsPage implements OnInit {
       this.invitations = [];
       this.visibleInvitations = [];
       this.isOfflineMode = true;
+      this.connectionMessage = this.getConnectionFallbackMessage();
       this.errorMessage = 'Invitations could not be loaded.';
       return;
     }
@@ -135,6 +138,7 @@ export class InvitationsPage implements OnInit {
       this.invitations = [];
       this.visibleInvitations = [];
       this.isOfflineMode = true;
+      this.connectionMessage = this.getConnectionFallbackMessage();
       this.errorMessage = 'No cached invitations available.';
       return;
     }
@@ -142,14 +146,24 @@ export class InvitationsPage implements OnInit {
     try {
       this.invitations = JSON.parse(cached) as Invitation[];
       this.isOfflineMode = true;
+      this.connectionMessage = this.getConnectionFallbackMessage();
       this.errorMessage = '';
       this.updateVisibleInvitations();
     } catch {
       this.invitations = [];
       this.visibleInvitations = [];
       this.isOfflineMode = true;
+      this.connectionMessage = this.getConnectionFallbackMessage();
       this.errorMessage = 'Cached invitations could not be read.';
     }
+  }
+
+  private getConnectionFallbackMessage(): string {
+    if (isPlatformBrowser(this.platformId) && !navigator.onLine) {
+      return 'Offline';
+    }
+
+    return 'Server/API nicht erreichbar';
   }
 
 }

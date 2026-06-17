@@ -12,6 +12,9 @@ import { Chat } from '../../models/chat/chat';
 export class ChatListItem {
   chat = input.required<Chat>();
   draftText = input('');
+  lastMessageText = input('');
+  unreadCount = input(0);
+  hasUnreadMessages = input(false);
   chatClicked = output<Chat>();
 
   avatarColors = ['#B429F9', '#9C43F8', '#855DF7', '#6D77F6', '#5591F5', '#3EABF4', '#26C5F3'];
@@ -32,6 +35,10 @@ export class ChatListItem {
 
   get trimmedDraftText(): string {
     return this.draftText().trim();
+  }
+
+  get trimmedLastMessageText(): string {
+    return this.lastMessageText().trim();
   }
 
   onClick(): void {

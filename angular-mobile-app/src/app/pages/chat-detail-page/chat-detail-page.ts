@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { ApiMessage } from '../../models/message/api-message';
 import { Chat } from '../../models/chat/chat';
+import { ApiProfile } from '../../models/profile/api-profile';
 import { ChatService } from '../../services/chat/chat.service';
 import { MessageService } from '../../services/message/message.service';
 import { AuthService } from '../../services/auth/auth.service';
@@ -53,6 +54,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private readonly chatDraftsKey = 'chat_drafts';
   private readonly pendingMessagesKey = 'pending_messages';
+  private readonly chatReadStateKey = 'chat_read_state';
   private readonly handleOnline = () => this.flushPendingMessages();
   private isFlushingPendingMessages = false;
 
@@ -70,6 +72,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   isAttachmentMenuOpen = false;
 
   isChatMenuOpen = false;
+  isMembersListOpen = false;
   actionMessage = '';
 
   private cameraStream?: MediaStream;
@@ -131,6 +134,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
           JSON.stringify(response.messages ?? []),
         );
 
+        this.markChatAsRead(response.messages ?? []);
         this.loadPhotos();
         this.cdr.detectChanges();
 
@@ -155,7 +159,9 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     }
 
     try {
-      this.messages = this.withPendingMessages(JSON.parse(cachedMessages) as ApiMessage[]);
+      const parsedMessages = JSON.parse(cachedMessages) as ApiMessage[];
+      this.messages = this.withPendingMessages(parsedMessages);
+      this.markChatAsRead(parsedMessages);
     } catch {
       this.messages = this.withPendingMessages([]);
     }
@@ -207,6 +213,16 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   toggleChatMenu(): void {
     this.isChatMenuOpen = !this.isChatMenuOpen;
     this.isAttachmentMenuOpen = false;
+  }
+
+  openMembersList(): void {
+    this.isMembersListOpen = true;
+    this.isChatMenuOpen = false;
+    this.isAttachmentMenuOpen = false;
+  }
+
+  closeMembersList(): void {
+    this.isMembersListOpen = false;
   }
 
   openImagePreview(imageUrl: string): void {
@@ -364,6 +380,84 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   canLeaveChat(): boolean {
     return this.chat?.role === 'member';
+  }
+
+  getMemberPreview(): string {
+    const names = this.getMembers()
+      .map((member) => this.getProfileDisplayName(member))
+      .filter(Boolean);
+
+    if (!names.length) {
+      return 'No members';
+    }
+
+    if (names.length <= 3) {
+      return names.join(', ');
+    }
+
+    return `${names.slice(0, 3).join(', ')} +${names.length - 3}`;
+  }
+
+  getMembers(): ApiProfile[] {
+    const members = [...(this.chat?.participants ?? [])];
+
+    if (this.chat?.owner) {
+      members.unshift(this.chat.owner);
+    }
+
+    for (const message of this.messages) {
+      const profile = this.getProfileFromMessage(message);
+
+      if (profile) {
+        members.push(profile);
+      }
+    }
+
+    const uniqueMembers = new Map<string, ApiProfile>();
+
+    for (const member of members) {
+      uniqueMembers.set(member.hash || member.userid, member);
+    }
+
+    return [...uniqueMembers.values()];
+  }
+
+  getProfileDisplayName(profile: ApiProfile): string {
+    return profile.nickname || profile.fullname || profile.userid;
+  }
+
+  getProfileInitial(profile: ApiProfile): string {
+    return this.getProfileDisplayName(profile).charAt(0).toUpperCase();
+  }
+
+  getMemberRole(profile: ApiProfile): string {
+    if (this.chat?.owner?.hash && profile.hash === this.chat.owner.hash) {
+      return 'Owner';
+    }
+
+    if (this.chat?.owner?.userid && profile.userid === this.chat.owner.userid) {
+      return 'Owner';
+    }
+
+    return 'Member';
+  }
+
+  private getProfileFromMessage(message: ApiMessage): ApiProfile | null {
+    const userid = message.userid?.trim();
+    const nickname = message.usernick || message.username || userid;
+    const fullname = message.userfullname || nickname;
+    const hash = message.userhash || userid;
+
+    if (!userid || !hash || !nickname || !fullname) {
+      return null;
+    }
+
+    return {
+      userid,
+      nickname,
+      fullname,
+      hash,
+    };
   }
 
   deleteChat(): void {
@@ -585,6 +679,33 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     if (!container) return;
 
     container.scrollTop = container.scrollHeight;
+  }
+
+  private markChatAsRead(messages: ApiMessage[]): void {
+    const lastMessage = messages.at(-1);
+
+    if (!lastMessage) return;
+
+    const savedState = localStorage.getItem(this.chatReadStateKey);
+    let readState: Record<string, { lastMessageId?: string; lastMessageTime?: string }> = {};
+
+    if (savedState) {
+      try {
+        readState = JSON.parse(savedState) as Record<
+          string,
+          { lastMessageId?: string; lastMessageTime?: string }
+        >;
+      } catch {
+        readState = {};
+      }
+    }
+
+    readState[String(this.chatid)] = {
+      lastMessageId: lastMessage.id,
+      lastMessageTime: lastMessage.time,
+    };
+
+    localStorage.setItem(this.chatReadStateKey, JSON.stringify(readState));
   }
 
   private addOnlineListener(): void {
