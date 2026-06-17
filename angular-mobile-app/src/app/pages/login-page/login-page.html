@@ -11,6 +11,9 @@
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <div class="field-group">
         <label for="userid">User ID</label>
+        @if (getFieldError('userid')) {
+          <p class="field-error">{{ getFieldError('userid') }}</p>
+        }
 
         <mat-form-field appearance="outline" class="full-width">
           <input
@@ -20,24 +23,14 @@
             placeholder="Enter HSE userid"
             formControlName="userid"
           />
-
-          <mat-error *ngIf="loginForm.get('userid')?.hasError('required')">
-            User ID is required
-          </mat-error>
-
-          <mat-error
-            *ngIf="
-              loginForm.get('userid')?.hasError('minlength') ||
-              loginForm.get('userid')?.hasError('maxlength')
-            "
-          >
-            User ID must be 8 characters
-          </mat-error>
         </mat-form-field>
       </div>
 
       <div class="field-group">
         <label for="password">Password</label>
+        @if (getFieldError('password')) {
+          <p class="field-error">{{ getFieldError('password') }}</p>
+        }
 
         <mat-form-field appearance="outline" class="full-width">
           <input
@@ -53,14 +46,6 @@
               {{ hidePassword ? 'visibility_off' : 'visibility' }}
             </mat-icon>
           </button>
-
-          <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
-            Password is required
-          </mat-error>
-
-          <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
-            Minimum 5 characters
-          </mat-error>
         </mat-form-field>
       </div>
 

@@ -74,11 +74,20 @@
 
 .field-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 
   font-size: 16px;
   font-weight: 700;
   color: #111;
+}
+
+.field-error {
+  margin: 0 0 6px;
+
+  color: #c62828;
+
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .full-width {

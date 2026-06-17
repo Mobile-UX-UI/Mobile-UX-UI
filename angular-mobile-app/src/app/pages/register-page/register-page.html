@@ -6,39 +6,50 @@
   </button>
 
   <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
+    @if (getFieldError('userid')) {
+      <p class="field-error">{{ getFieldError('userid') }}</p>
+    }
     <mat-form-field appearance="outline" class="full">
       <input matInput placeholder="HSE userid" formControlName="userid" />
-      <mat-error *ngIf="registerForm.get('userid')?.hasError('required')">
-        User ID is required
-      </mat-error>
-      <mat-error
-        *ngIf="
-          registerForm.get('userid')?.hasError('minlength') ||
-          registerForm.get('userid')?.hasError('maxlength')
-        "
-      >
-        User ID must be 8 characters
-      </mat-error>
     </mat-form-field>
 
     <div class="row">
-      <mat-form-field appearance="outline">
-        <input matInput placeholder="First name" formControlName="firstName" />
-      </mat-form-field>
+      <div class="row-field">
+        @if (getFieldError('firstName')) {
+          <p class="field-error">{{ getFieldError('firstName') }}</p>
+        }
+        <mat-form-field appearance="outline">
+          <input matInput placeholder="First name" formControlName="firstName" />
+        </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline">
-        <input matInput placeholder="Last name" formControlName="lastName" />
-      </mat-form-field>
+      <div class="row-field">
+        @if (getFieldError('lastName')) {
+          <p class="field-error">{{ getFieldError('lastName') }}</p>
+        }
+        <mat-form-field appearance="outline">
+          <input matInput placeholder="Last name" formControlName="lastName" />
+        </mat-form-field>
+      </div>
     </div>
 
+    @if (getFieldError('nickname')) {
+      <p class="field-error">{{ getFieldError('nickname') }}</p>
+    }
     <mat-form-field appearance="outline" class="full">
       <input matInput placeholder="Nickname" formControlName="nickname" />
     </mat-form-field>
 
+    @if (getFieldError('password')) {
+      <p class="field-error">{{ getFieldError('password') }}</p>
+    }
     <mat-form-field appearance="outline" class="full">
       <input matInput type="password" placeholder="Password" formControlName="password" />
     </mat-form-field>
 
+    @if (getFieldError('repeatPassword')) {
+      <p class="field-error">{{ getFieldError('repeatPassword') }}</p>
+    }
     <mat-form-field appearance="outline" class="full">
       <input
         matInput
@@ -46,11 +57,6 @@
         placeholder="Repeat your password"
         formControlName="repeatPassword"
       />
-      <mat-error
-        *ngIf="registerForm.hasError('mismatch') && registerForm.get('repeatPassword')?.touched"
-      >
-        Passwords do not match
-      </mat-error>
     </mat-form-field>
 
     <p *ngIf="errorMessage" class="error-text">

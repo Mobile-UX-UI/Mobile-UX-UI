@@ -30,6 +30,7 @@ import { UserProfile } from '../../models/profile/user-profile';
 })
 export class LoginPage {
   hidePassword = true;
+  fieldErrors: Record<string, string> = {};
 
   private fb = inject(FormBuilder);
   private router = inject(Router);
@@ -38,11 +39,29 @@ export class LoginPage {
   private snackBar = inject(MatSnackBar);
 
   loginForm = this.fb.group({
-    userid: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(8)]],
-    password: ['', [Validators.required, Validators.minLength(5)]],
+    userid: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(8),
+        Validators.pattern(/^[a-zA-Z]{4}it\d{2}$/),
+      ],
+    ],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
+  constructor() {
+    for (const fieldName of Object.keys(this.loginForm.controls)) {
+      this.loginForm.get(fieldName)?.valueChanges.subscribe(() => {
+        this.clearFieldError(fieldName);
+      });
+    }
+  }
+
   onSubmit(): void {
+    this.clearFieldErrors();
+
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       this.showError('Please enter your userid and password correctly');
@@ -62,7 +81,7 @@ export class LoginPage {
       next: (response) => {
         if (response?.status !== 'ok' || !response?.token) {
           this.authService.clearSession();
-          this.showError(response?.message ?? 'Login failed');
+          this.handleAuthError(response?.message ?? 'Login failed');
           return;
         }
 
@@ -128,7 +147,7 @@ export class LoginPage {
           typeof error.error === 'string' ? error.error : (error?.error?.message ?? 'Login failed');
 
         this.authService.clearSession();
-        this.showError(message);
+        this.handleAuthError(message);
       },
     });
   }
@@ -157,6 +176,79 @@ export class LoginPage {
         panelClass: ['success-snackbar'],
       });
     });
+  }
+
+  getFieldError(fieldName: 'userid' | 'password'): string {
+    const control = this.loginForm.get(fieldName);
+
+    if (!control || (!control.touched && !control.dirty)) return '';
+
+    if (this.fieldErrors[fieldName]) return this.fieldErrors[fieldName];
+
+    if (control.hasError('required')) {
+      return fieldName === 'userid' ? 'User ID is required' : 'Password is required';
+    }
+
+    if (fieldName === 'userid') {
+      if (control.hasError('minlength') || control.hasError('maxlength')) {
+        return 'User ID must be 8 characters';
+      }
+
+      if (control.hasError('pattern')) {
+        return 'Invalid User ID format';
+      }
+    }
+
+    if (fieldName === 'password' && control.hasError('minlength')) {
+      return 'Password must be at least 6 characters';
+    }
+
+    return '';
+  }
+
+  private handleAuthError(message: string): void {
+    const normalizedMessage = message.toLowerCase();
+
+    if (normalizedMessage.includes('user') || normalizedMessage.includes('userid')) {
+      this.setFieldError('userid', 'Invalid User ID');
+    } else if (
+      normalizedMessage.includes('password') ||
+      normalizedMessage.includes('credential') ||
+      normalizedMessage.includes('login')
+    ) {
+      this.setFieldError('password', 'Invalid password');
+    } else {
+      this.setFieldError('userid', 'Login data is invalid');
+      this.setFieldError('password', 'Login data is invalid');
+    }
+
+    this.showError(message);
+  }
+
+  private setFieldError(fieldName: 'userid' | 'password', message: string): void {
+    const control = this.loginForm.get(fieldName);
+
+    this.fieldErrors[fieldName] = message;
+    control?.setErrors({ ...(control.errors ?? {}), server: true });
+    control?.markAsTouched();
+  }
+
+  private clearFieldError(fieldName: string): void {
+    const control = this.loginForm.get(fieldName);
+
+    delete this.fieldErrors[fieldName];
+
+    if (control?.hasError('server')) {
+      const errors = { ...(control.errors ?? {}) };
+      delete errors['server'];
+      control.setErrors(Object.keys(errors).length ? errors : null);
+    }
+  }
+
+  private clearFieldErrors(): void {
+    for (const fieldName of Object.keys(this.loginForm.controls)) {
+      this.clearFieldError(fieldName);
+    }
   }
 
   private async finishLogin(
