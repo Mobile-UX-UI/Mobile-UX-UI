@@ -1,5 +1,5 @@
 <div class="chat-item" (click)="onClick()">
-  <div class="chat-avatar-wrapper">
+  <div class="chat-avatar-wrapper" (click)="onAvatarClick($event)">
     <div class="chat-avatar" [style.background-color]="avatarColor">
       {{ firstLetter }}
     </div>

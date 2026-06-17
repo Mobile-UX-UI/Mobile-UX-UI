@@ -16,6 +16,7 @@
 .chat-avatar-wrapper {
   position: relative;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .chat-avatar {

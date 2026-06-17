@@ -33,6 +33,14 @@ type ChatMessage = ApiMessage & {
   photoPreviewUrl?: string;
 };
 
+type LooseProfile = Partial<ApiProfile> & {
+  id?: string;
+  userhash?: string;
+  username?: string;
+  usernick?: string;
+  userfullname?: string;
+};
+
 @Component({
   selector: 'app-chat-detail-page',
   imports: [FormsModule, MatIconModule],
@@ -55,6 +63,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly chatDraftsKey = 'chat_drafts';
   private readonly pendingMessagesKey = 'pending_messages';
   private readonly chatReadStateKey = 'chat_read_state';
+  private readonly cachedChatsKey = 'cached_chats';
   private readonly handleOnline = () => this.flushPendingMessages();
   private isFlushingPendingMessages = false;
 
@@ -73,6 +82,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   isChatMenuOpen = false;
   isMembersListOpen = false;
+  selectedMemberProfile?: ApiProfile;
   actionMessage = '';
 
   private cameraStream?: MediaStream;
@@ -99,17 +109,36 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   loadChat(): void {
     const request = this.chatService.getChats();
 
-    if (!request) return;
+    if (!request) {
+      this.loadCachedChat();
+      return;
+    }
 
     request.subscribe({
       next: (response) => {
         this.chat = response.chats?.find((chat) => String(chat.chatid) === String(this.chatid));
+        localStorage.setItem(this.cachedChatsKey, JSON.stringify(response.chats ?? []));
         this.cdr.detectChanges();
       },
       error: (error: unknown) => {
         console.error('Load chat error:', error);
+        this.loadCachedChat();
       },
     });
+  }
+
+  private loadCachedChat(): void {
+    const cachedChats = localStorage.getItem(this.cachedChatsKey);
+
+    if (!cachedChats) return;
+
+    try {
+      const chats = JSON.parse(cachedChats) as Chat[];
+      this.chat = chats.find((chat) => String(chat.chatid) === String(this.chatid));
+      this.cdr.detectChanges();
+    } catch {
+      this.chat = undefined;
+    }
   }
 
   loadMessages(): void {
@@ -217,12 +246,22 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   openMembersList(): void {
     this.isMembersListOpen = true;
+    this.selectedMemberProfile = undefined;
     this.isChatMenuOpen = false;
     this.isAttachmentMenuOpen = false;
   }
 
   closeMembersList(): void {
     this.isMembersListOpen = false;
+    this.selectedMemberProfile = undefined;
+  }
+
+  openMemberProfile(profile: ApiProfile): void {
+    this.selectedMemberProfile = profile;
+  }
+
+  closeMemberProfile(): void {
+    this.selectedMemberProfile = undefined;
   }
 
   openImagePreview(imageUrl: string): void {
@@ -366,6 +405,13 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     return `https://maps.googleapis.com/maps/api/staticmap?center=${encodedPosition}&zoom=16&size=500x300&markers=color:red%7C${encodedPosition}&key=${environment.googleMapsApiKey}`;
   }
 
+  hasGoogleMapsApiKey(): boolean {
+    return Boolean(
+      environment.googleMapsApiKey &&
+        environment.googleMapsApiKey !== 'YOUR_GOOGLE_MAPS_API_KEY',
+    );
+  }
+
   openMap(position: string): void {
     window.open(`https://maps.google.com/?q=${position}`, '_blank');
   }
@@ -399,10 +445,16 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   }
 
   getMembers(): ApiProfile[] {
-    const members = [...(this.chat?.participants ?? [])];
+    const members = [...(this.chat?.participants ?? [])]
+      .map((profile) => this.normalizeProfile(profile))
+      .filter((profile): profile is ApiProfile => !!profile);
 
     if (this.chat?.owner) {
-      members.unshift(this.chat.owner);
+      const owner = this.normalizeProfile(this.chat.owner);
+
+      if (owner) {
+        members.unshift(owner);
+      }
     }
 
     for (const message of this.messages) {
@@ -416,18 +468,18 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     const uniqueMembers = new Map<string, ApiProfile>();
 
     for (const member of members) {
-      uniqueMembers.set(member.hash || member.userid, member);
+      uniqueMembers.set(this.getProfileKey(member), member);
     }
 
     return [...uniqueMembers.values()];
   }
 
   getProfileDisplayName(profile: ApiProfile): string {
-    return profile.nickname || profile.fullname || profile.userid;
+    return profile.nickname || profile.fullname || profile.userid || this.getShortHash(profile.hash);
   }
 
   getProfileInitial(profile: ApiProfile): string {
-    return this.getProfileDisplayName(profile).charAt(0).toUpperCase();
+    return (this.getProfileDisplayName(profile).charAt(0) || '?').toUpperCase();
   }
 
   getMemberRole(profile: ApiProfile): string {
@@ -443,21 +495,44 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   }
 
   private getProfileFromMessage(message: ApiMessage): ApiProfile | null {
-    const userid = message.userid?.trim();
-    const nickname = message.usernick || message.username || userid;
-    const fullname = message.userfullname || nickname;
-    const hash = message.userhash || userid;
+    return this.normalizeProfile({
+      userid: message.userid,
+      nickname: message.usernick,
+      username: message.username,
+      fullname: message.userfullname,
+      hash: message.userhash,
+    });
+  }
 
-    if (!userid || !hash || !nickname || !fullname) {
+  private normalizeProfile(profile: LooseProfile | undefined): ApiProfile | null {
+    if (!profile) {
+      return null;
+    }
+
+    const hash = profile.hash || profile.userhash || profile.userid || profile.id;
+    const userid = profile.userid || profile.username || profile.id || hash;
+    const nickname =
+      profile.nickname || profile.usernick || profile.username || profile.fullname || userid || hash;
+    const fullname = profile.fullname || profile.userfullname || nickname;
+
+    if (!hash && !userid && !nickname && !fullname) {
       return null;
     }
 
     return {
-      userid,
-      nickname,
-      fullname,
-      hash,
+      userid: userid || this.getShortHash(hash),
+      nickname: nickname || this.getShortHash(hash),
+      fullname: fullname || nickname || this.getShortHash(hash),
+      hash: hash || userid || nickname || fullname || 'Unknown',
     };
+  }
+
+  private getProfileKey(profile: ApiProfile): string {
+    return profile.hash || profile.userid || profile.nickname || profile.fullname;
+  }
+
+  private getShortHash(hash?: string): string {
+    return hash ? hash.slice(0, 8) : 'Unknown';
   }
 
   deleteChat(): void {

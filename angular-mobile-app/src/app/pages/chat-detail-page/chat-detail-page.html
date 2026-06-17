@@ -103,12 +103,20 @@
               }
 
               @if (message.position) {
-                <img
-                  class="message-map"
-                  [src]="getMapImageUrl(message.position)"
-                  alt="Location map"
-                  (click)="openMap(message.position)"
-                />
+                @if (hasGoogleMapsApiKey()) {
+                  <img
+                    class="message-map"
+                    [src]="getMapImageUrl(message.position)"
+                    alt="Location map"
+                    (click)="openMap(message.position)"
+                  />
+                } @else {
+                  <button type="button" class="message-map map-fallback" (click)="openMap(message.position)">
+                    <mat-icon>location_on</mat-icon>
+                    <span>Location</span>
+                    <small>{{ message.position }}</small>
+                  </button>
+                }
               }
 
               @if (message.text) {
@@ -198,6 +206,32 @@
   @if (isMembersListOpen) {
     <div class="members-overlay" (click)="closeMembersList()">
       <section class="members-panel" (click)="$event.stopPropagation()">
+        @if (selectedMemberProfile) {
+        <div class="members-panel-header">
+          <button type="button" class="members-back-button" (click)="closeMemberProfile()">
+            <mat-icon>arrow_back</mat-icon>
+          </button>
+
+          <div>
+            <strong>Profile</strong>
+            <span>{{ getMemberRole(selectedMemberProfile) }}</span>
+          </div>
+
+          <button type="button" class="members-close-button" (click)="closeMembersList()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="profile-panel">
+          <div class="profile-avatar">
+            {{ getProfileInitial(selectedMemberProfile) }}
+          </div>
+
+          <strong>{{ getProfileDisplayName(selectedMemberProfile) }}</strong>
+          <span>{{ selectedMemberProfile.fullname }}</span>
+          <small>{{ selectedMemberProfile.userid }}</small>
+        </div>
+        } @else {
         <div class="members-panel-header">
           <div>
             <strong>Members</strong>
@@ -211,7 +245,7 @@
 
         <div class="members-list">
           @for (member of getMembers(); track member.hash || member.userid) {
-            <div class="member-row">
+            <button type="button" class="member-row" (click)="openMemberProfile(member)">
               <div class="member-avatar">
                 {{ getProfileInitial(member) }}
               </div>
@@ -222,11 +256,12 @@
               </div>
 
               <span class="member-role">{{ getMemberRole(member) }}</span>
-            </div>
+            </button>
           } @empty {
             <p class="empty-members">No members found</p>
           }
         </div>
+        }
       </section>
     </div>
   }

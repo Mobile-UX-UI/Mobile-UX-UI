@@ -30,11 +30,75 @@
         [lastMessageText]="getLastMessageText(chat.chatid)"
         [unreadCount]="getUnreadCount(chat.chatid)"
         [hasUnreadMessages]="hasUnreadMessages(chat.chatid)"
-        (chatClicked)="openChat($event)"></app-chat-list-item>
+        (chatClicked)="openChat($event)"
+        (avatarClicked)="openChatMembers($event)"></app-chat-list-item>
       } @empty {
       <p class="empty-text">No chats found</p>
       }
     </div>
+
+    @if (selectedMembersChat) {
+    <div class="members-overlay" (click)="closeChatMembers()">
+      <section class="members-panel" (click)="$event.stopPropagation()">
+        @if (selectedMemberProfile) {
+        <div class="members-panel-header">
+          <button type="button" class="members-back-button" (click)="closeMemberProfile()">
+            <mat-icon>arrow_back</mat-icon>
+          </button>
+
+          <div>
+            <strong>Profile</strong>
+            <span>{{ getMemberRole(selectedMemberProfile, selectedMembersChat) }}</span>
+          </div>
+
+          <button type="button" class="members-close-button" (click)="closeChatMembers()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="profile-panel">
+          <div class="profile-avatar">
+            {{ getProfileInitial(selectedMemberProfile) }}
+          </div>
+
+          <strong>{{ getProfileDisplayName(selectedMemberProfile) }}</strong>
+          <span>{{ selectedMemberProfile.fullname }}</span>
+          <small>{{ selectedMemberProfile.userid }}</small>
+        </div>
+        } @else {
+        <div class="members-panel-header">
+          <div>
+            <strong>Members</strong>
+            <span>{{ getMembers(selectedMembersChat).length }} participants</span>
+          </div>
+
+          <button type="button" class="members-close-button" (click)="closeChatMembers()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="members-list">
+          @for (member of getMembers(selectedMembersChat); track member.hash || member.userid) {
+          <button type="button" class="member-row" (click)="openMemberProfile(member)">
+            <div class="member-avatar">
+              {{ getProfileInitial(member) }}
+            </div>
+
+            <div class="member-info">
+              <strong>{{ getProfileDisplayName(member) }}</strong>
+              <span>{{ member.fullname || member.userid }}</span>
+            </div>
+
+            <span class="member-role">{{ getMemberRole(member, selectedMembersChat) }}</span>
+          </button>
+          } @empty {
+          <p class="empty-members">No members found</p>
+          }
+        </div>
+        }
+      </section>
+    </div>
+    }
 
     <app-bottom-navbar></app-bottom-navbar>
   </div>

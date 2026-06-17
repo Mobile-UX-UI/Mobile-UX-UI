@@ -16,6 +16,7 @@ export class ChatListItem {
   unreadCount = input(0);
   hasUnreadMessages = input(false);
   chatClicked = output<Chat>();
+  avatarClicked = output<Chat>();
 
   avatarColors = ['#B429F9', '#9C43F8', '#855DF7', '#6D77F6', '#5591F5', '#3EABF4', '#26C5F3'];
 
@@ -43,5 +44,10 @@ export class ChatListItem {
 
   onClick(): void {
     this.chatClicked.emit(this.chat());
+  }
+
+  onAvatarClick(event: MouseEvent): void {
+    event.stopPropagation();
+    this.avatarClicked.emit(this.chat());
   }
 }

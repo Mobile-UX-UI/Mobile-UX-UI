@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth/auth.service';
 
 import { Chat } from '../../models/chat/chat';
 import { ApiMessage } from '../../models/message/api-message';
+import { ApiProfile } from '../../models/profile/api-profile';
 
 type ChatListMetadata = {
   lastMessage?: ApiMessage;
@@ -22,6 +23,13 @@ type ChatListMetadata = {
 };
 
 type ChatReadState = Record<string, { lastMessageId?: string; lastMessageTime?: string }>;
+type LooseProfile = Partial<ApiProfile> & {
+  id?: string;
+  userhash?: string;
+  username?: string;
+  usernick?: string;
+  userfullname?: string;
+};
 
 @Component({
   selector: 'app-chat-list-page',
@@ -39,7 +47,9 @@ export class ChatListPage implements OnInit, OnDestroy {
   private readonly cachedChatsKey = 'cached_chats';
   private readonly chatDraftsKey = 'chat_drafts';
   private readonly chatReadStateKey = 'chat_read_state';
+  private readonly apiRetryDelayMs = 60000;
   private refreshIntervalId?: ReturnType<typeof setInterval>;
+  private apiRetryAfter = 0;
 
   chats: Chat[] = [];
   chatMetadata: Record<string, ChatListMetadata> = {};
@@ -47,10 +57,12 @@ export class ChatListPage implements OnInit, OnDestroy {
 
   isOfflineMode = false;
   connectionMessage = '';
+  selectedMembersChat?: Chat;
+  selectedMemberProfile?: ApiProfile;
 
   ngOnInit(): void {
     this.loadChats();
-    this.refreshIntervalId = setInterval(() => this.loadChats(), 15000);
+    this.refreshIntervalId = setInterval(() => this.loadChats(), 30000);
   }
 
   ngOnDestroy(): void {
@@ -60,6 +72,10 @@ export class ChatListPage implements OnInit, OnDestroy {
   }
 
   loadChats(): void {
+    if (Date.now() < this.apiRetryAfter) {
+      return;
+    }
+
     const request = this.chatService.getChats();
 
     if (!request) {
@@ -81,6 +97,7 @@ export class ChatListPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Get chats error:', error);
+        this.apiRetryAfter = Date.now() + this.apiRetryDelayMs;
         this.loadCachedChats();
       },
     });
@@ -135,6 +152,24 @@ export class ChatListPage implements OnInit, OnDestroy {
     this.router.navigate(['/chats', chat.chatid]);
   }
 
+  openChatMembers(chat: Chat): void {
+    this.selectedMembersChat = chat;
+    this.selectedMemberProfile = undefined;
+  }
+
+  closeChatMembers(): void {
+    this.selectedMembersChat = undefined;
+    this.selectedMemberProfile = undefined;
+  }
+
+  openMemberProfile(profile: ApiProfile): void {
+    this.selectedMemberProfile = profile;
+  }
+
+  closeMemberProfile(): void {
+    this.selectedMemberProfile = undefined;
+  }
+
   getLastMessageText(chatid: string): string {
     return this.chatMetadata[String(chatid)]?.lastMessageText ?? '';
   }
@@ -150,6 +185,56 @@ export class ChatListPage implements OnInit, OnDestroy {
   getDraftText(chatid: string): string {
     const drafts = this.getDrafts();
     return drafts[String(chatid)] ?? '';
+  }
+
+  getMembers(chat: Chat): ApiProfile[] {
+    const members = [...(chat.participants ?? [])]
+      .map((profile) => this.normalizeProfile(profile))
+      .filter((profile): profile is ApiProfile => !!profile);
+
+    if (chat.owner) {
+      const owner = this.normalizeProfile(chat.owner);
+
+      if (owner) {
+        members.unshift(owner);
+      }
+    }
+
+    for (const message of this.getCachedMessages(chat.chatid)) {
+      const profile = this.getProfileFromMessage(message);
+
+      if (profile) {
+        members.push(profile);
+      }
+    }
+
+    const uniqueMembers = new Map<string, ApiProfile>();
+
+    for (const member of members) {
+      uniqueMembers.set(this.getProfileKey(member), member);
+    }
+
+    return [...uniqueMembers.values()];
+  }
+
+  getProfileDisplayName(profile: ApiProfile): string {
+    return profile.nickname || profile.fullname || profile.userid || this.getShortHash(profile.hash);
+  }
+
+  getProfileInitial(profile: ApiProfile): string {
+    return (this.getProfileDisplayName(profile).charAt(0) || '?').toUpperCase();
+  }
+
+  getMemberRole(profile: ApiProfile, chat?: Chat): string {
+    if (chat?.owner?.hash && profile.hash === chat.owner.hash) {
+      return 'Owner';
+    }
+
+    if (chat?.owner?.userid && profile.userid === chat.owner.userid) {
+      return 'Owner';
+    }
+
+    return 'Member';
   }
 
   private getDrafts(): Record<string, string> {
@@ -337,6 +422,47 @@ export class ChatListPage implements OnInit, OnDestroy {
     }
 
     return 'New message';
+  }
+
+  private getProfileFromMessage(message: ApiMessage): ApiProfile | null {
+    return this.normalizeProfile({
+      userid: message.userid,
+      nickname: message.usernick,
+      username: message.username,
+      fullname: message.userfullname,
+      hash: message.userhash,
+    });
+  }
+
+  private normalizeProfile(profile: LooseProfile | undefined): ApiProfile | null {
+    if (!profile) {
+      return null;
+    }
+
+    const hash = profile.hash || profile.userhash || profile.userid || profile.id;
+    const userid = profile.userid || profile.username || profile.id || hash;
+    const nickname =
+      profile.nickname || profile.usernick || profile.username || profile.fullname || userid || hash;
+    const fullname = profile.fullname || profile.userfullname || nickname;
+
+    if (!hash && !userid && !nickname && !fullname) {
+      return null;
+    }
+
+    return {
+      userid: userid || this.getShortHash(hash),
+      nickname: nickname || this.getShortHash(hash),
+      fullname: fullname || nickname || this.getShortHash(hash),
+      hash: hash || userid || nickname || fullname || 'Unknown',
+    };
+  }
+
+  private getProfileKey(profile: ApiProfile): string {
+    return profile.hash || profile.userid || profile.nickname || profile.fullname;
+  }
+
+  private getShortHash(hash?: string): string {
+    return hash ? hash.slice(0, 8) : 'Unknown';
   }
 
   private getCachedMessages(chatid: string): ApiMessage[] {
