@@ -127,6 +127,15 @@
   color: #111;
 }
 
+.pending-message {
+  opacity: 0.72;
+}
+
+.pending-message-row .message-time {
+  color: #777;
+  font-style: italic;
+}
+
 .message-time {
   font-size: 10px;
   color: #555;

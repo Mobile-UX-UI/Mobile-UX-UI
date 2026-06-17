@@ -54,7 +54,11 @@
         </div>
       }
 
-      <div class="message-row" [class.my-message-row]="isMyMessage(message)">
+      <div
+        class="message-row"
+        [class.my-message-row]="isMyMessage(message)"
+        [class.pending-message-row]="message.pending"
+      >
         @if (!isMyMessage(message)) {
           <div class="message-avatar">
             {{ getInitials(message) }}
@@ -68,8 +72,21 @@
             </div>
           }
 
-          @if (message.text || message.photoid || message.position) {
-            <div class="message-bubble" [class.my-message]="isMyMessage(message)">
+          @if (message.text || message.photoid || message.photoPreviewUrl || message.position) {
+            <div
+              class="message-bubble"
+              [class.my-message]="isMyMessage(message)"
+              [class.pending-message]="message.pending"
+            >
+              @if (message.photoPreviewUrl) {
+                <img
+                  class="message-photo"
+                  [src]="message.photoPreviewUrl"
+                  alt="Photo"
+                  (click)="openImagePreview(message.photoPreviewUrl)"
+                />
+              }
+
               @if (message.photoid && photoUrls[message.photoid]) {
                 <img
                   class="message-photo"
@@ -97,7 +114,11 @@
           }
 
           <div class="message-time">
-            {{ formatTime(message.time) }}
+            @if (message.pending) {
+              Wird gesendet...
+            } @else {
+              {{ formatTime(message.time) }}
+            }
           </div>
         </div>
       </div>

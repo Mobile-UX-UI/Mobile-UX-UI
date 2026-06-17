@@ -65,6 +65,6 @@ export class InvitationService {
       return null;
     }
 
-    return this.api.get<StatusResponse>('leavechat', { token, chatid }, { noCache: true });
+    return this.api.get<StatusResponse>('rejectinvite', { token, chatid }, { noCache: true });
   }
 }

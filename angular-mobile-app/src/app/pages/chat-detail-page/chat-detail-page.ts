@@ -18,6 +18,20 @@ import { MessageService } from '../../services/message/message.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { environment } from '../../../environments/environment';
 
+type PendingMessage = {
+  clientId: string;
+  text?: string;
+  photo?: string;
+  position?: string;
+  createdAt: string;
+};
+
+type ChatMessage = ApiMessage & {
+  pending?: boolean;
+  clientId?: string;
+  photoPreviewUrl?: string;
+};
+
 @Component({
   selector: 'app-chat-detail-page',
   imports: [FormsModule, MatIconModule],
@@ -38,11 +52,14 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private readonly chatDraftsKey = 'chat_drafts';
+  private readonly pendingMessagesKey = 'pending_messages';
+  private readonly handleOnline = () => this.flushPendingMessages();
+  private isFlushingPendingMessages = false;
 
   chatid = '';
   chat?: Chat;
 
-  messages: ApiMessage[] = [];
+  messages: ChatMessage[] = [];
   newMessageText = '';
 
   selectedPhotoBase64 = '';
@@ -62,11 +79,14 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     this.newMessageText = this.getDraftText();
     this.loadChat();
     this.loadMessages();
+    this.addOnlineListener();
+    this.flushPendingMessages();
   }
 
   ngOnDestroy(): void {
     this.saveDraft();
     this.closeCamera();
+    this.removeOnlineListener();
 
     Object.values(this.photoUrls).forEach((url) => {
       URL.revokeObjectURL(url);
@@ -99,14 +119,17 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     request.subscribe({
       next: (response) => {
-        this.messages = [...(response.messages ?? [])];
+        this.messages = this.withPendingMessages([...(response.messages ?? [])]);
         console.log(
           'Saving messages under key:',
           this.getCachedMessagesKey(),
-          this.messages.length,
+          response.messages?.length ?? 0,
         );
 
-        localStorage.setItem(this.getCachedMessagesKey(), JSON.stringify(this.messages));
+        localStorage.setItem(
+          this.getCachedMessagesKey(),
+          JSON.stringify(response.messages ?? []),
+        );
 
         this.loadPhotos();
         this.cdr.detectChanges();
@@ -126,15 +149,15 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     const cachedMessages = localStorage.getItem(this.getCachedMessagesKey());
 
     if (!cachedMessages) {
-      this.messages = [];
+      this.messages = this.withPendingMessages([]);
       this.cdr.detectChanges();
       return;
     }
 
     try {
-      this.messages = JSON.parse(cachedMessages) as ApiMessage[];
+      this.messages = this.withPendingMessages(JSON.parse(cachedMessages) as ApiMessage[]);
     } catch {
-      this.messages = [];
+      this.messages = this.withPendingMessages([]);
     }
 
     this.cdr.detectChanges();
@@ -146,6 +169,10 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   private getCachedMessagesKey(): string {
     return `cached_messages_${this.chatid}`;
+  }
+
+  private getPendingMessagesKey(): string {
+    return `${this.pendingMessagesKey}_${this.chatid}`;
   }
 
   loadPhotos(): void {
@@ -390,14 +417,38 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       return;
     }
 
-    const request = this.messageService.postMessage(
+    const pendingMessage = this.createPendingMessage(
       text || undefined,
-      this.chatid,
       this.selectedPhotoBase64 || undefined,
       undefined,
     );
 
-    if (!request) return;
+    if (!this.isOnline()) {
+      this.queuePendingMessage(pendingMessage);
+      this.newMessageText = '';
+      this.clearDraft();
+      this.selectedPhotoBase64 = '';
+      this.cdr.detectChanges();
+      setTimeout(() => this.scrollToBottom(), 0);
+      return;
+    }
+
+    const request = this.messageService.postMessage(
+      pendingMessage.text,
+      this.chatid,
+      pendingMessage.photo,
+      pendingMessage.position,
+    );
+
+    if (!request) {
+      this.queuePendingMessage(pendingMessage);
+      this.newMessageText = '';
+      this.clearDraft();
+      this.selectedPhotoBase64 = '';
+      this.cdr.detectChanges();
+      setTimeout(() => this.scrollToBottom(), 0);
+      return;
+    }
 
     request.subscribe({
       next: () => {
@@ -408,6 +459,12 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       },
       error: (error: unknown) => {
         console.error('Post message error:', error);
+        this.queuePendingMessage(pendingMessage);
+        this.newMessageText = '';
+        this.clearDraft();
+        this.selectedPhotoBase64 = '';
+        this.cdr.detectChanges();
+        setTimeout(() => this.scrollToBottom(), 0);
       },
     });
   }
@@ -425,7 +482,11 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     return name.charAt(0).toUpperCase();
   }
 
-  isMyMessage(message: ApiMessage): boolean {
+  isMyMessage(message: ChatMessage): boolean {
+    if (message.pending) {
+      return true;
+    }
+
     const currentUserHash = this.authService.getCurrentUserHash();
 
     if (!currentUserHash || !message.userhash) {
@@ -524,6 +585,134 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     if (!container) return;
 
     container.scrollTop = container.scrollHeight;
+  }
+
+  private addOnlineListener(): void {
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('online', this.handleOnline);
+  }
+
+  private removeOnlineListener(): void {
+    if (typeof window === 'undefined') return;
+
+    window.removeEventListener('online', this.handleOnline);
+  }
+
+  private isOnline(): boolean {
+    return typeof navigator === 'undefined' ? true : navigator.onLine;
+  }
+
+  private createPendingMessage(
+    text?: string,
+    photo?: string,
+    position?: string,
+  ): PendingMessage {
+    return {
+      clientId: `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      text,
+      photo,
+      position,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  private queuePendingMessage(message: PendingMessage): void {
+    const pendingMessages = this.getPendingMessages();
+
+    if (!pendingMessages.some((pendingMessage) => pendingMessage.clientId === message.clientId)) {
+      pendingMessages.push(message);
+      localStorage.setItem(this.getPendingMessagesKey(), JSON.stringify(pendingMessages));
+    }
+
+    this.messages = this.withPendingMessages(this.getCachedMessages());
+  }
+
+  private flushPendingMessages(): void {
+    if (!this.isOnline() || this.isFlushingPendingMessages) return;
+
+    const [nextPendingMessage] = this.getPendingMessages();
+
+    if (!nextPendingMessage) return;
+
+    const request = this.messageService.postMessage(
+      nextPendingMessage.text,
+      this.chatid,
+      nextPendingMessage.photo,
+      nextPendingMessage.position,
+    );
+
+    if (!request) return;
+
+    this.isFlushingPendingMessages = true;
+
+    request.subscribe({
+      next: () => {
+        const remainingMessages = this
+          .getPendingMessages()
+          .filter((message) => message.clientId !== nextPendingMessage.clientId);
+
+        localStorage.setItem(this.getPendingMessagesKey(), JSON.stringify(remainingMessages));
+        this.isFlushingPendingMessages = false;
+
+        if (remainingMessages.length) {
+          this.flushPendingMessages();
+        } else {
+          this.loadMessages();
+        }
+      },
+      error: (error: unknown) => {
+        console.error('Flush pending message error:', error);
+        this.isFlushingPendingMessages = false;
+      },
+    });
+  }
+
+  private withPendingMessages(messages: ApiMessage[]): ChatMessage[] {
+    return [...messages, ...this.getPendingMessages().map((message) => this.toChatMessage(message))];
+  }
+
+  private toChatMessage(message: PendingMessage): ChatMessage {
+    const profile = this.authService.getUserProfile();
+
+    return {
+      id: message.clientId,
+      clientId: message.clientId,
+      userid: profile?.userid ?? 'me',
+      usernick: profile?.nickname,
+      userfullname: profile?.fullname,
+      userhash: profile?.hash,
+      chatid: this.chatid,
+      time: message.createdAt,
+      text: message.text,
+      position: message.position,
+      photoPreviewUrl: message.photo,
+      pending: true,
+    };
+  }
+
+  private getPendingMessages(): PendingMessage[] {
+    const savedMessages = localStorage.getItem(this.getPendingMessagesKey());
+
+    if (!savedMessages) return [];
+
+    try {
+      return JSON.parse(savedMessages) as PendingMessage[];
+    } catch {
+      return [];
+    }
+  }
+
+  private getCachedMessages(): ApiMessage[] {
+    const cachedMessages = localStorage.getItem(this.getCachedMessagesKey());
+
+    if (!cachedMessages) return [];
+
+    try {
+      return JSON.parse(cachedMessages) as ApiMessage[];
+    } catch {
+      return [];
+    }
   }
 
   private getDraftText(): string {

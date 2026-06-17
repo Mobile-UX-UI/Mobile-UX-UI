@@ -18,19 +18,16 @@ export class InvitationsPage implements OnInit {
   private platformId = inject(PLATFORM_ID);
 
   private readonly cachedInvitesKey = 'cached_invites';
-  private readonly hiddenInvitationIdsKey = 'hidden_invitation_ids';
 
   selectedTab: InvitationTab = 'received';
 
   invitations: Invitation[] = [];
   visibleInvitations: Invitation[] = [];
 
-  hiddenInvitationIds: string[] = [];
   errorMessage = '';
   isOfflineMode = false;
 
   ngOnInit(): void {
-    this.hiddenInvitationIds = this.loadHiddenInvitationIds();
     this.loadInvitations();
   }
 
@@ -83,8 +80,24 @@ export class InvitationsPage implements OnInit {
   }
 
   declineInvitation(chatid: string): void {
-    this.hideInvitation(chatid);
-    this.errorMessage = '';
+    const request = this.invitationService.declineInvite(String(chatid));
+
+    if (!request) {
+      this.errorMessage = 'Invitation could not be declined.';
+      return;
+    }
+
+    request.subscribe({
+      next: () => {
+        this.removeInvitation(chatid);
+        this.errorMessage = '';
+        this.loadInvitations();
+      },
+      error: (error) => {
+        console.error('Decline invitation error:', error);
+        this.errorMessage = 'Invitation could not be declined.';
+      },
+    });
   }
 
   private removeInvitation(chatid: string): void {
@@ -97,27 +110,8 @@ export class InvitationsPage implements OnInit {
     this.updateVisibleInvitations();
   }
 
-  private hideInvitation(chatid: string): void {
-    const id = String(chatid);
-
-    if (!this.hiddenInvitationIds.includes(id)) {
-      this.hiddenInvitationIds = [...this.hiddenInvitationIds, id];
-    }
-
-    if (isPlatformBrowser(this.platformId)) {
-      sessionStorage.setItem(
-        this.hiddenInvitationIdsKey,
-        JSON.stringify(this.hiddenInvitationIds),
-      );
-    }
-
-    this.updateVisibleInvitations();
-  }
-
   private updateVisibleInvitations(): void {
-    this.visibleInvitations = this.invitations.filter(
-      (invitation) => !this.hiddenInvitationIds.includes(String(invitation.chatid)),
-    );
+    this.visibleInvitations = this.invitations;
   }
 
   private saveCachedInvitations(): void {
@@ -158,19 +152,4 @@ export class InvitationsPage implements OnInit {
     }
   }
 
-  private loadHiddenInvitationIds(): string[] {
-    if (!isPlatformBrowser(this.platformId)) {
-      return [];
-    }
-
-    const saved = sessionStorage.getItem(this.hiddenInvitationIdsKey);
-
-    if (!saved) return [];
-
-    try {
-      return JSON.parse(saved);
-    } catch {
-      return [];
-    }
-  }
 }
