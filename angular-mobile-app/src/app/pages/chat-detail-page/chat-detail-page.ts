@@ -11,18 +11,21 @@ import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { MembersDialog } from '../../components/members-dialog/members-dialog';
 import { ApiMessage } from '../../models/message/api-message';
 import { Chat } from '../../models/chat/chat';
-import { ApiProfile } from '../../models/profile/api-profile';
 import { ChatService } from '../../services/chat/chat.service';
 import { MessageService } from '../../services/message/message.service';
 import { AuthService } from '../../services/auth/auth.service';
 import { environment } from '../../../environments/environment';
+import { getChatMembers, getProfileDisplayName } from '../../utils/profile.utils';
 
 type PendingMessage = {
   clientId: string;
   text?: string;
   photo?: string;
+  file?: string;
+  fileName?: string;
   position?: string;
   createdAt: string;
 };
@@ -31,19 +34,12 @@ type ChatMessage = ApiMessage & {
   pending?: boolean;
   clientId?: string;
   photoPreviewUrl?: string;
-};
-
-type LooseProfile = Partial<ApiProfile> & {
-  id?: string;
-  userhash?: string;
-  username?: string;
-  usernick?: string;
-  userfullname?: string;
+  filePreviewName?: string;
 };
 
 @Component({
   selector: 'app-chat-detail-page',
-  imports: [FormsModule, MatIconModule],
+  imports: [FormsModule, MatIconModule, MembersDialog],
   templateUrl: './chat-detail-page.html',
   styleUrl: './chat-detail-page.css',
 })
@@ -64,6 +60,9 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly pendingMessagesKey = 'pending_messages';
   private readonly chatReadStateKey = 'chat_read_state';
   private readonly cachedChatsKey = 'cached_chats';
+  private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
+  private readonly failedPhotoIdsKey = 'failed_photo_ids';
+  private readonly apiRetryDelayMs = 60000;
   private readonly handleOnline = () => this.flushPendingMessages();
   private isFlushingPendingMessages = false;
 
@@ -74,6 +73,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   newMessageText = '';
 
   selectedPhotoBase64 = '';
+  selectedFileBase64 = '';
+  selectedFileName = '';
   selectedImagePreviewUrl = '';
   photoUrls: Record<string, string> = {};
 
@@ -82,7 +83,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   isChatMenuOpen = false;
   isMembersListOpen = false;
-  selectedMemberProfile?: ApiProfile;
   actionMessage = '';
 
   private cameraStream?: MediaStream;
@@ -102,15 +102,22 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     this.removeOnlineListener();
 
     Object.values(this.photoUrls).forEach((url) => {
-      URL.revokeObjectURL(url);
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
     });
   }
 
   loadChat(): void {
+    this.loadCachedChat();
+
+    if (Date.now() < this.getRetryAfter(this.chatApiRetryAfterKey)) {
+      return;
+    }
+
     const request = this.chatService.getChats();
 
     if (!request) {
-      this.loadCachedChat();
       return;
     }
 
@@ -118,10 +125,12 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       next: (response) => {
         this.chat = response.chats?.find((chat) => String(chat.chatid) === String(this.chatid));
         localStorage.setItem(this.cachedChatsKey, JSON.stringify(response.chats ?? []));
+        localStorage.removeItem(this.chatApiRetryAfterKey);
         this.cdr.detectChanges();
       },
       error: (error: unknown) => {
         console.error('Load chat error:', error);
+        this.setRetryAfter(this.chatApiRetryAfterKey, this.apiRetryDelayMs);
         this.loadCachedChat();
       },
     });
@@ -211,27 +220,29 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   }
 
   loadPhotos(): void {
+    const failedPhotoIds = this.getFailedPhotoIds();
+
     for (const message of this.messages) {
-      if (!message.photoid || this.photoUrls[message.photoid]) {
+      if (!message.photoid || this.photoUrls[message.photoid] || failedPhotoIds.includes(message.photoid)) {
         continue;
       }
 
-      const request = this.messageService.getPhoto(message.photoid);
+      const photoUrl = this.messageService.getPhotoUrl(message.photoid);
 
-      if (!request) {
-        continue;
+      if (photoUrl) {
+        this.photoUrls[message.photoid] = photoUrl;
       }
-
-      request.subscribe({
-        next: (blob) => {
-          this.photoUrls[message.photoid!] = URL.createObjectURL(blob);
-          this.cdr.detectChanges();
-        },
-        error: (error: unknown) => {
-          console.error('Get photo error:', error);
-        },
-      });
     }
+  }
+
+  isPhotoUnavailable(photoid: string): boolean {
+    return this.getFailedPhotoIds().includes(photoid);
+  }
+
+  markPhotoUnavailable(photoid: string): void {
+    this.saveFailedPhotoId(photoid);
+    delete this.photoUrls[photoid];
+    this.cdr.detectChanges();
   }
 
   toggleAttachmentMenu(): void {
@@ -246,22 +257,12 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   openMembersList(): void {
     this.isMembersListOpen = true;
-    this.selectedMemberProfile = undefined;
     this.isChatMenuOpen = false;
     this.isAttachmentMenuOpen = false;
   }
 
   closeMembersList(): void {
     this.isMembersListOpen = false;
-    this.selectedMemberProfile = undefined;
-  }
-
-  openMemberProfile(profile: ApiProfile): void {
-    this.selectedMemberProfile = profile;
-  }
-
-  closeMemberProfile(): void {
-    this.selectedMemberProfile = undefined;
   }
 
   openImagePreview(imageUrl: string): void {
@@ -284,6 +285,25 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     reader.onload = () => {
       this.selectedPhotoBase64 = reader.result as string;
+      this.isAttachmentMenuOpen = false;
+      this.cdr.detectChanges();
+    };
+
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      this.selectedFileBase64 = reader.result as string;
+      this.selectedFileName = file.name;
       this.isAttachmentMenuOpen = false;
       this.cdr.detectChanges();
     };
@@ -416,6 +436,14 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     window.open(`https://maps.google.com/?q=${position}`, '_blank');
   }
 
+  getFileUrl(fileid: string): string {
+    return this.messageService.getFileUrl(fileid) ?? '#';
+  }
+
+  getFileLabel(message: ChatMessage): string {
+    return message.filePreviewName || (message.fileid ? `File ${message.fileid}` : 'File');
+  }
+
   goBack(): void {
     this.router.navigate(['/chats']);
   }
@@ -429,8 +457,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   }
 
   getMemberPreview(): string {
-    const names = this.getMembers()
-      .map((member) => this.getProfileDisplayName(member))
+    const names = getChatMembers(this.chat, this.messages)
+      .map((member) => getProfileDisplayName(member))
       .filter(Boolean);
 
     if (!names.length) {
@@ -442,97 +470,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     }
 
     return `${names.slice(0, 3).join(', ')} +${names.length - 3}`;
-  }
-
-  getMembers(): ApiProfile[] {
-    const members = [...(this.chat?.participants ?? [])]
-      .map((profile) => this.normalizeProfile(profile))
-      .filter((profile): profile is ApiProfile => !!profile);
-
-    if (this.chat?.owner) {
-      const owner = this.normalizeProfile(this.chat.owner);
-
-      if (owner) {
-        members.unshift(owner);
-      }
-    }
-
-    for (const message of this.messages) {
-      const profile = this.getProfileFromMessage(message);
-
-      if (profile) {
-        members.push(profile);
-      }
-    }
-
-    const uniqueMembers = new Map<string, ApiProfile>();
-
-    for (const member of members) {
-      uniqueMembers.set(this.getProfileKey(member), member);
-    }
-
-    return [...uniqueMembers.values()];
-  }
-
-  getProfileDisplayName(profile: ApiProfile): string {
-    return profile.nickname || profile.fullname || profile.userid || this.getShortHash(profile.hash);
-  }
-
-  getProfileInitial(profile: ApiProfile): string {
-    return (this.getProfileDisplayName(profile).charAt(0) || '?').toUpperCase();
-  }
-
-  getMemberRole(profile: ApiProfile): string {
-    if (this.chat?.owner?.hash && profile.hash === this.chat.owner.hash) {
-      return 'Owner';
-    }
-
-    if (this.chat?.owner?.userid && profile.userid === this.chat.owner.userid) {
-      return 'Owner';
-    }
-
-    return 'Member';
-  }
-
-  private getProfileFromMessage(message: ApiMessage): ApiProfile | null {
-    return this.normalizeProfile({
-      userid: message.userid,
-      nickname: message.usernick,
-      username: message.username,
-      fullname: message.userfullname,
-      hash: message.userhash,
-    });
-  }
-
-  private normalizeProfile(profile: LooseProfile | undefined): ApiProfile | null {
-    if (!profile) {
-      return null;
-    }
-
-    const hash = profile.hash || profile.userhash || profile.userid || profile.id;
-    const userid = profile.userid || profile.username || profile.id || hash;
-    const nickname =
-      profile.nickname || profile.usernick || profile.username || profile.fullname || userid || hash;
-    const fullname = profile.fullname || profile.userfullname || nickname;
-
-    if (!hash && !userid && !nickname && !fullname) {
-      return null;
-    }
-
-    return {
-      userid: userid || this.getShortHash(hash),
-      nickname: nickname || this.getShortHash(hash),
-      fullname: fullname || nickname || this.getShortHash(hash),
-      hash: hash || userid || nickname || fullname || 'Unknown',
-    };
-  }
-
-  private getProfileKey(profile: ApiProfile): string {
-    return profile.hash || profile.userid || profile.nickname || profile.fullname;
-  }
-
-  private getShortHash(hash?: string): string {
-    return hash ? hash.slice(0, 8) : 'Unknown';
   }
 
   deleteChat(): void {
@@ -582,13 +519,15 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   sendMessage(): void {
     const text = this.newMessageText.trim();
 
-    if (!text && !this.selectedPhotoBase64) {
+    if (!text && !this.selectedPhotoBase64 && !this.selectedFileBase64) {
       return;
     }
 
     const pendingMessage = this.createPendingMessage(
       text || undefined,
       this.selectedPhotoBase64 || undefined,
+      this.selectedFileBase64 || undefined,
+      this.selectedFileName || undefined,
       undefined,
     );
 
@@ -597,6 +536,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       this.newMessageText = '';
       this.clearDraft();
       this.selectedPhotoBase64 = '';
+      this.selectedFileBase64 = '';
+      this.selectedFileName = '';
       this.cdr.detectChanges();
       setTimeout(() => this.scrollToBottom(), 0);
       return;
@@ -607,6 +548,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       this.chatid,
       pendingMessage.photo,
       pendingMessage.position,
+      pendingMessage.file,
     );
 
     if (!request) {
@@ -614,6 +556,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       this.newMessageText = '';
       this.clearDraft();
       this.selectedPhotoBase64 = '';
+      this.selectedFileBase64 = '';
+      this.selectedFileName = '';
       this.cdr.detectChanges();
       setTimeout(() => this.scrollToBottom(), 0);
       return;
@@ -624,6 +568,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
         this.newMessageText = '';
         this.clearDraft();
         this.selectedPhotoBase64 = '';
+        this.selectedFileBase64 = '';
+        this.selectedFileName = '';
         this.loadMessages();
       },
       error: (error: unknown) => {
@@ -632,6 +578,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
         this.newMessageText = '';
         this.clearDraft();
         this.selectedPhotoBase64 = '';
+        this.selectedFileBase64 = '';
+        this.selectedFileName = '';
         this.cdr.detectChanges();
         setTimeout(() => this.scrollToBottom(), 0);
       },
@@ -640,6 +588,11 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   removeSelectedPhoto(): void {
     this.selectedPhotoBase64 = '';
+  }
+
+  removeSelectedFile(): void {
+    this.selectedFileBase64 = '';
+    this.selectedFileName = '';
   }
 
   onDraftChange(): void {
@@ -802,12 +755,16 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private createPendingMessage(
     text?: string,
     photo?: string,
+    file?: string,
+    fileName?: string,
     position?: string,
   ): PendingMessage {
     return {
       clientId: `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       text,
       photo,
+      file,
+      fileName,
       position,
       createdAt: new Date().toISOString(),
     };
@@ -836,6 +793,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       this.chatid,
       nextPendingMessage.photo,
       nextPendingMessage.position,
+      nextPendingMessage.file,
     );
 
     if (!request) return;
@@ -883,6 +841,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       text: message.text,
       position: message.position,
       photoPreviewUrl: message.photo,
+      filePreviewName: message.fileName,
       pending: true,
     };
   }
@@ -909,6 +868,34 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     } catch {
       return [];
     }
+  }
+
+  private getRetryAfter(key: string): number {
+    return Number(localStorage.getItem(key) ?? 0);
+  }
+
+  private setRetryAfter(key: string, delayMs: number): void {
+    localStorage.setItem(key, String(Date.now() + delayMs));
+  }
+
+  private getFailedPhotoIds(): string[] {
+    const savedPhotoIds = localStorage.getItem(this.failedPhotoIdsKey);
+
+    if (!savedPhotoIds) return [];
+
+    try {
+      return JSON.parse(savedPhotoIds) as string[];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveFailedPhotoId(photoid: string): void {
+    const failedPhotoIds = this.getFailedPhotoIds();
+
+    if (failedPhotoIds.includes(photoid)) return;
+
+    localStorage.setItem(this.failedPhotoIdsKey, JSON.stringify([...failedPhotoIds, photoid]));
   }
 
   private getDraftText(): string {

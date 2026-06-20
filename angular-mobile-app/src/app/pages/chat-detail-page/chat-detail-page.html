@@ -78,7 +78,14 @@
             </div>
           }
 
-          @if (message.text || message.photoid || message.photoPreviewUrl || message.position) {
+          @if (
+            message.text ||
+            message.photoid ||
+            message.photoPreviewUrl ||
+            message.fileid ||
+            message.filePreviewName ||
+            message.position
+          ) {
             <div
               class="message-bubble"
               [class.my-message]="isMyMessage(message)"
@@ -99,7 +106,30 @@
                   [src]="photoUrls[message.photoid]"
                   alt="Photo"
                   (click)="openImagePreview(photoUrls[message.photoid])"
+                  (error)="markPhotoUnavailable(message.photoid)"
                 />
+              } @else if (message.photoid && isPhotoUnavailable(message.photoid)) {
+                <div class="message-photo photo-fallback">
+                  <mat-icon>broken_image</mat-icon>
+                  <span>Photo unavailable</span>
+                </div>
+              }
+
+              @if (message.fileid) {
+                <a
+                  class="message-file"
+                  [href]="getFileUrl(message.fileid)"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <mat-icon>description</mat-icon>
+                  <span>{{ getFileLabel(message) }}</span>
+                </a>
+              } @else if (message.filePreviewName) {
+                <div class="message-file pending-file">
+                  <mat-icon>description</mat-icon>
+                  <span>{{ message.filePreviewName }}</span>
+                </div>
               }
 
               @if (message.position) {
@@ -151,11 +181,31 @@
     </div>
   }
 
+  @if (selectedFileBase64) {
+    <div class="file-preview">
+      <mat-icon>description</mat-icon>
+
+      <div class="file-info">
+        <strong>{{ selectedFileName || 'Selected file' }}</strong>
+        <span>Ready to send</span>
+      </div>
+
+      <button type="button" class="remove-photo-button" (click)="removeSelectedFile()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
   @if (isAttachmentMenuOpen) {
     <div class="attachment-menu">
       <button type="button" class="attachment-option" (click)="imageInput.click()">
         <mat-icon>image</mat-icon>
         <span>Photo</span>
+      </button>
+
+      <button type="button" class="attachment-option" (click)="fileInput.click()">
+        <mat-icon>description</mat-icon>
+        <span>File</span>
       </button>
 
       <button type="button" class="attachment-option" (click)="openCamera()">
@@ -204,66 +254,13 @@
   }
 
   @if (isMembersListOpen) {
-    <div class="members-overlay" (click)="closeMembersList()">
-      <section class="members-panel" (click)="$event.stopPropagation()">
-        @if (selectedMemberProfile) {
-        <div class="members-panel-header">
-          <button type="button" class="members-back-button" (click)="closeMemberProfile()">
-            <mat-icon>arrow_back</mat-icon>
-          </button>
-
-          <div>
-            <strong>Profile</strong>
-            <span>{{ getMemberRole(selectedMemberProfile) }}</span>
-          </div>
-
-          <button type="button" class="members-close-button" (click)="closeMembersList()">
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
-
-        <div class="profile-panel">
-          <div class="profile-avatar">
-            {{ getProfileInitial(selectedMemberProfile) }}
-          </div>
-
-          <strong>{{ getProfileDisplayName(selectedMemberProfile) }}</strong>
-          <span>{{ selectedMemberProfile.fullname }}</span>
-          <small>{{ selectedMemberProfile.userid }}</small>
-        </div>
-        } @else {
-        <div class="members-panel-header">
-          <div>
-            <strong>Members</strong>
-            <span>{{ getMembers().length }} participants</span>
-          </div>
-
-          <button type="button" class="members-close-button" (click)="closeMembersList()">
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
-
-        <div class="members-list">
-          @for (member of getMembers(); track member.hash || member.userid) {
-            <button type="button" class="member-row" (click)="openMemberProfile(member)">
-              <div class="member-avatar">
-                {{ getProfileInitial(member) }}
-              </div>
-
-              <div class="member-info">
-                <strong>{{ getProfileDisplayName(member) }}</strong>
-                <span>{{ member.fullname || member.userid }}</span>
-              </div>
-
-              <span class="member-role">{{ getMemberRole(member) }}</span>
-            </button>
-          } @empty {
-            <p class="empty-members">No members found</p>
-          }
-        </div>
-        }
-      </section>
-    </div>
+    @if (chat) {
+      <app-members-dialog
+        [chat]="chat"
+        [messages]="messages"
+        (closed)="closeMembersList()"
+      ></app-members-dialog>
+    }
   }
 
   <form class="message-input-bar" (submit)="sendMessage()">
@@ -273,6 +270,14 @@
       accept="image/png,image/jpeg"
       hidden
       (change)="onImageSelected($event)"
+    />
+
+    <input
+      #fileInput
+      type="file"
+      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*,text/plain"
+      hidden
+      (change)="onFileSelected($event)"
     />
 
     <button type="button" class="small-icon-button" (click)="toggleAttachmentMenu()">

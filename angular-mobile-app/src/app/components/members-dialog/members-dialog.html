@@ -1,0 +1,60 @@
+<div class="members-overlay" (click)="close()">
+  <section class="members-panel" (click)="$event.stopPropagation()">
+    @if (selectedMemberProfile) {
+      <div class="members-panel-header">
+        <button type="button" class="members-back-button" (click)="closeMemberProfile()">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+
+        <div>
+          <strong>Profile</strong>
+          <span>{{ getMemberRole(selectedMemberProfile) }}</span>
+        </div>
+
+        <button type="button" class="members-close-button" (click)="close()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="profile-panel">
+        <div class="profile-avatar">
+          {{ getProfileInitial(selectedMemberProfile) }}
+        </div>
+
+        <strong>{{ getProfileDisplayName(selectedMemberProfile) }}</strong>
+        <span>{{ selectedMemberProfile.fullname }}</span>
+        <small>{{ selectedMemberProfile.userid }}</small>
+      </div>
+    } @else {
+      <div class="members-panel-header">
+        <div>
+          <strong>Members</strong>
+          <span>{{ getMembers().length }} participants</span>
+        </div>
+
+        <button type="button" class="members-close-button" (click)="close()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="members-list">
+        @for (member of getMembers(); track member.hash || member.userid) {
+          <button type="button" class="member-row" (click)="openMemberProfile(member)">
+            <div class="member-avatar">
+              {{ getProfileInitial(member) }}
+            </div>
+
+            <div class="member-info">
+              <strong>{{ getProfileDisplayName(member) }}</strong>
+              <span>{{ member.fullname || member.userid }}</span>
+            </div>
+
+            <span class="member-role">{{ getMemberRole(member) }}</span>
+          </button>
+        } @empty {
+          <p class="empty-members">No members found</p>
+        }
+      </div>
+    }
+  </section>
+</div>

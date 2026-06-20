@@ -46,6 +46,7 @@ export class MessageService {
     chatid?: string,
     photo?: string,
     position?: string,
+    file?: string,
   ): Observable<StatusResponse> | null {
     const token = this.auth.getToken();
 
@@ -73,6 +74,10 @@ export class MessageService {
       body['position'] = position;
     }
 
+    if (file) {
+      body['file'] = file;
+    }
+
     return this.api.post<StatusResponse>('postmessage', body);
   }
 
@@ -84,5 +89,25 @@ export class MessageService {
     }
 
     return this.api.getBlob('getphoto', { token, photoid }, { noCache: true });
+  }
+
+  public getPhotoUrl(photoid: string): string | null {
+    const token = this.auth.getToken();
+
+    if (!token) {
+      return null;
+    }
+
+    return this.api.buildGetUrl('getphoto', { token, photoid });
+  }
+
+  public getFileUrl(fileid: string): string | null {
+    const token = this.auth.getToken();
+
+    if (!token) {
+      return null;
+    }
+
+    return this.api.buildGetUrl('getfile', { token, fileid });
   }
 }

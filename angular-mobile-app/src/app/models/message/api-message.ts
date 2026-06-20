@@ -6,6 +6,7 @@ export interface ApiMessage {
 
   text?: string;
   photoid?: string;
+  fileid?: string;
   position?: string;
   important?: boolean;
 

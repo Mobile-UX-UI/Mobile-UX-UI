@@ -33,6 +33,27 @@ export class ApiService {
     });
   }
 
+  public buildGetUrl(
+    request: string,
+    params?: Record<string, string | number | boolean>,
+    options?: { noCache?: boolean },
+  ): string {
+    const url = new URL(this.baseUrl);
+    url.searchParams.set('request', request);
+
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        url.searchParams.set(key, String(value));
+      }
+    }
+
+    if (options?.noCache) {
+      url.searchParams.set('_', Date.now().toString());
+    }
+
+    return url.toString();
+  }
+
   public post<T>(request: string, body?: Record<string, unknown>): Observable<T> {
     return this.http.post<T>(this.baseUrl, {
       request,
