@@ -714,7 +714,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     if (!lastMessage) return;
 
-    const savedState = localStorage.getItem(this.chatReadStateKey);
+    const savedState = localStorage.getItem(this.getChatReadStateKey());
     let readState: Record<string, { lastMessageId?: string; lastMessageTime?: string }> = {};
 
     if (savedState) {
@@ -733,7 +733,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       lastMessageTime: lastMessage.time,
     };
 
-    localStorage.setItem(this.chatReadStateKey, JSON.stringify(readState));
+    localStorage.setItem(this.getChatReadStateKey(), JSON.stringify(readState));
   }
 
   private addOnlineListener(): void {
@@ -931,5 +931,13 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     } catch {
       return {};
     }
+  }
+
+  private getChatReadStateKey(): string {
+    const currentUserHash = this.authService.getCurrentUserHash();
+
+    return currentUserHash
+      ? `${this.chatReadStateKey}_${currentUserHash}`
+      : this.chatReadStateKey;
   }
 }

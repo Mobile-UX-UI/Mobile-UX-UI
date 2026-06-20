@@ -41,6 +41,8 @@ export class ChatListPage implements OnInit, OnDestroy {
   private readonly chatReadStateKey = 'chat_read_state';
   private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
   private readonly apiRetryDelayMs = 60000;
+  private readonly handleOnline = () => this.loadChats();
+  private readonly handleOffline = () => this.showOfflineBanner();
   private refreshIntervalId?: ReturnType<typeof setInterval>;
 
   chats: Chat[] = [];
@@ -52,6 +54,7 @@ export class ChatListPage implements OnInit, OnDestroy {
   selectedMembersChat?: Chat;
 
   ngOnInit(): void {
+    this.addConnectionListeners();
     this.loadChats();
     this.refreshIntervalId = setInterval(() => this.loadChats(), 30000);
   }
@@ -60,9 +63,16 @@ export class ChatListPage implements OnInit, OnDestroy {
     if (this.refreshIntervalId) {
       clearInterval(this.refreshIntervalId);
     }
+
+    this.removeConnectionListeners();
   }
 
   loadChats(): void {
+    if (this.isBrowserOffline()) {
+      this.loadCachedChats(true);
+      return;
+    }
+
     if (Date.now() < this.getRetryAfter(this.chatApiRetryAfterKey)) {
       this.loadCachedChats(false);
       return;
@@ -98,6 +108,7 @@ export class ChatListPage implements OnInit, OnDestroy {
 
   loadCachedChats(showConnectionWarning = true): void {
     const cachedChats = localStorage.getItem(this.cachedChatsKey);
+    const shouldShowWarning = showConnectionWarning || this.isBrowserOffline();
 
     if (!cachedChats) {
       this.chats = [];
@@ -108,8 +119,8 @@ export class ChatListPage implements OnInit, OnDestroy {
 
     try {
       this.chats = JSON.parse(cachedChats) as Chat[];
-      this.isOfflineMode = showConnectionWarning;
-      this.connectionMessage = showConnectionWarning ? this.getConnectionFallbackMessage() : '';
+      this.isOfflineMode = shouldShowWarning;
+      this.connectionMessage = shouldShowWarning ? this.getConnectionFallbackMessage() : '';
       this.loadChatMetadataFromCache();
     } catch {
       this.chats = [];
@@ -333,7 +344,7 @@ export class ChatListPage implements OnInit, OnDestroy {
       lastMessageTime: message.time,
     };
 
-    localStorage.setItem(this.chatReadStateKey, JSON.stringify(readState));
+    localStorage.setItem(this.getChatReadStateKey(), JSON.stringify(readState));
   }
 
   private getSortedChats(chats: Chat[]): Chat[] {
@@ -386,7 +397,7 @@ export class ChatListPage implements OnInit, OnDestroy {
   }
 
   private getChatReadState(): ChatReadState {
-    const savedState = localStorage.getItem(this.chatReadStateKey);
+    const savedState = localStorage.getItem(this.getChatReadStateKey());
 
     if (!savedState) return {};
 
@@ -413,11 +424,36 @@ export class ChatListPage implements OnInit, OnDestroy {
   }
 
   private getConnectionFallbackMessage(): string {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    if (this.isBrowserOffline()) {
       return 'Offline';
     }
 
     return 'Server/API nicht erreichbar';
+  }
+
+  private showOfflineBanner(): void {
+    this.isOfflineMode = true;
+    this.connectionMessage = 'Offline';
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+  }
+
+  private addConnectionListeners(): void {
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('online', this.handleOnline);
+    window.addEventListener('offline', this.handleOffline);
+  }
+
+  private removeConnectionListeners(): void {
+    if (typeof window === 'undefined') return;
+
+    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener('offline', this.handleOffline);
+  }
+
+  private isBrowserOffline(): boolean {
+    return typeof navigator !== 'undefined' && !navigator.onLine;
   }
 
   private getRetryAfter(key: string): number {
@@ -426,5 +462,13 @@ export class ChatListPage implements OnInit, OnDestroy {
 
   private setRetryAfter(key: string, delayMs: number): void {
     localStorage.setItem(key, String(Date.now() + delayMs));
+  }
+
+  private getChatReadStateKey(): string {
+    const currentUserHash = this.authService.getCurrentUserHash();
+
+    return currentUserHash
+      ? `${this.chatReadStateKey}_${currentUserHash}`
+      : this.chatReadStateKey;
   }
 }
