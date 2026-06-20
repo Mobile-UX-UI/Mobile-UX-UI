@@ -1,7 +1,7 @@
 {
   "configVersion": 1,
-  "timestamp": 1781975838988,
-  "index": "/index.html",
+  "timestamp": 1781976799883,
+  "index": "/Mobile-UX-UI/index.html",
   "assetGroups": [
     {
       "name": "app",
@@ -11,10 +11,10 @@
         "ignoreVary": true
       },
       "urls": [
-        "/favicon.ico",
-        "/index.html",
-        "/main-3G6PMIWS.js",
-        "/styles-AI7ACAV7.css"
+        "/Mobile-UX-UI/favicon.ico",
+        "/Mobile-UX-UI/index.html",
+        "/Mobile-UX-UI/main-3G6PMIWS.js",
+        "/Mobile-UX-UI/styles-AI7ACAV7.css"
       ],
       "patterns": []
     },
@@ -31,10 +31,10 @@
   ],
   "dataGroups": [],
   "hashTable": {
-    "/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
-    "/index.html": "c5a391dc4f31a4d814459212a1f65341ed2b1de4",
-    "/main-3G6PMIWS.js": "b8ec5036fe944d3e80a0d9797642686e0e8a3a78",
-    "/styles-AI7ACAV7.css": "7880c0b92a8fc5844971de84c2c67d745b0b69ed"
+    "/Mobile-UX-UI/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
+    "/Mobile-UX-UI/index.html": "3ecba8da67403e1f54485d55a701c492cb24c0d1",
+    "/Mobile-UX-UI/main-3G6PMIWS.js": "b8ec5036fe944d3e80a0d9797642686e0e8a3a78",
+    "/Mobile-UX-UI/styles-AI7ACAV7.css": "7880c0b92a8fc5844971de84c2c67d745b0b69ed"
   },
   "navigationUrls": [
     {
