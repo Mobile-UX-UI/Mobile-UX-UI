@@ -18,6 +18,8 @@ export class InvitationsPage implements OnInit {
   private platformId = inject(PLATFORM_ID);
 
   private readonly cachedInvitesKey = 'cached_invites';
+  private readonly apiWarningUntilKey = 'api_warning_until';
+  private readonly apiWarningDelayMs = 90000;
 
   selectedTab: InvitationTab = 'received';
 
@@ -51,6 +53,7 @@ export class InvitationsPage implements OnInit {
         this.invitations = response.invites ?? [];
         this.isOfflineMode = false;
         this.connectionMessage = '';
+        localStorage.removeItem(this.apiWarningUntilKey);
 
         this.saveCachedInvitations();
 
@@ -58,6 +61,7 @@ export class InvitationsPage implements OnInit {
       },
       error: (error) => {
         console.error('Get invitations error:', error);
+        this.setApiWarning();
         this.loadCachedInvitations();
       },
     });
@@ -76,6 +80,7 @@ export class InvitationsPage implements OnInit {
       },
       error: (error) => {
         console.error('Accept invitation error:', error);
+        this.setApiWarning();
         this.errorMessage = 'Invitation could not be accepted.';
       },
     });
@@ -97,6 +102,7 @@ export class InvitationsPage implements OnInit {
       },
       error: (error) => {
         console.error('Decline invitation error:', error);
+        this.setApiWarning();
         this.errorMessage = 'Invitation could not be declined.';
       },
     });
@@ -164,6 +170,12 @@ export class InvitationsPage implements OnInit {
     }
 
     return 'Server/API nicht erreichbar';
+  }
+
+  private setApiWarning(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    localStorage.setItem(this.apiWarningUntilKey, String(Date.now() + this.apiWarningDelayMs));
   }
 
 }

@@ -262,6 +262,50 @@ body.dark-mode .chat-menu-empty {
   color: #cfcfcf !important;
 }
 
+/* Members Dialog */
+
+body.dark-mode .members-panel {
+  background: #1e1e1e !important;
+  color: #f5f5f5 !important;
+}
+
+body.dark-mode .members-panel-header {
+  border-color: #333 !important;
+}
+
+body.dark-mode .members-panel-header strong,
+body.dark-mode .member-info strong,
+body.dark-mode .profile-panel strong {
+  color: #f5f5f5 !important;
+}
+
+body.dark-mode .members-panel-header span,
+body.dark-mode .member-info span,
+body.dark-mode .profile-panel span,
+body.dark-mode .profile-panel small,
+body.dark-mode .empty-members {
+  color: #cfcfcf !important;
+}
+
+body.dark-mode .member-row {
+  color: #f5f5f5 !important;
+}
+
+body.dark-mode .member-row:hover {
+  background: #2a2138 !important;
+}
+
+body.dark-mode .members-close-button,
+body.dark-mode .members-back-button {
+  background: #2b2b2b !important;
+  color: #f5f5f5 !important;
+}
+
+body.dark-mode .members-close-button mat-icon,
+body.dark-mode .members-back-button mat-icon {
+  color: #f5f5f5 !important;
+}
+
 /* Chat Menu */
 
 body.dark-mode .chat-menu-item.danger,

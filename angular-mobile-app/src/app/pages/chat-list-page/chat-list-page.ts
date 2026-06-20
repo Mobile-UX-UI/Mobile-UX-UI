@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angula
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
+import { finalize } from 'rxjs';
 
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
 import { ChatListItem } from '../../components/chat-list-item/chat-list-item';
@@ -40,10 +41,15 @@ export class ChatListPage implements OnInit, OnDestroy {
   private readonly chatDraftsKey = 'chat_drafts';
   private readonly chatReadStateKey = 'chat_read_state';
   private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
+  private readonly chatMetadataRetryAfterKey = 'chat_metadata_retry_after';
+  private readonly apiWarningUntilKey = 'api_warning_until';
   private readonly apiRetryDelayMs = 60000;
+  private readonly metadataRetryDelayMs = 120000;
+  private readonly apiWarningDelayMs = 90000;
   private readonly handleOnline = () => this.loadChats();
   private readonly handleOffline = () => this.showOfflineBanner();
   private refreshIntervalId?: ReturnType<typeof setInterval>;
+  private isLoadingChatMetadata = false;
 
   chats: Chat[] = [];
   chatMetadata: Record<string, ChatListMetadata> = {};
@@ -56,7 +62,7 @@ export class ChatListPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.addConnectionListeners();
     this.loadChats();
-    this.refreshIntervalId = setInterval(() => this.loadChats(), 30000);
+    this.refreshIntervalId = setInterval(() => this.loadChats(), 60000);
   }
 
   ngOnDestroy(): void {
@@ -91,6 +97,7 @@ export class ChatListPage implements OnInit, OnDestroy {
         this.isOfflineMode = false;
         this.connectionMessage = '';
         localStorage.removeItem(this.chatApiRetryAfterKey);
+        localStorage.removeItem(this.apiWarningUntilKey);
 
         localStorage.setItem(this.cachedChatsKey, JSON.stringify(this.chats));
 
@@ -100,6 +107,7 @@ export class ChatListPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Get chats error:', error);
+        this.showApiWarning();
         this.setRetryAfter(this.chatApiRetryAfterKey, this.apiRetryDelayMs);
         this.loadCachedChats(true);
       },
@@ -119,8 +127,9 @@ export class ChatListPage implements OnInit, OnDestroy {
 
     try {
       this.chats = JSON.parse(cachedChats) as Chat[];
-      this.isOfflineMode = shouldShowWarning;
-      this.connectionMessage = shouldShowWarning ? this.getConnectionFallbackMessage() : '';
+      this.isOfflineMode = shouldShowWarning || this.hasApiWarning();
+      this.connectionMessage =
+        shouldShowWarning || this.hasApiWarning() ? this.getConnectionFallbackMessage() : '';
       this.loadChatMetadataFromCache();
     } catch {
       this.chats = [];
@@ -200,6 +209,30 @@ export class ChatListPage implements OnInit, OnDestroy {
   private loadChatMetadata(): void {
     this.loadChatMetadataFromCache();
 
+    if (
+      this.isBrowserOffline() ||
+      this.isLoadingChatMetadata ||
+      Date.now() < this.getRetryAfter(this.chatMetadataRetryAfterKey)
+    ) {
+      return;
+    }
+
+    this.isLoadingChatMetadata = true;
+    let pendingRequests = 0;
+    let hadError = false;
+
+    const completeMetadataRequest = (): void => {
+      pendingRequests--;
+
+      if (pendingRequests > 0) return;
+
+      this.isLoadingChatMetadata = false;
+
+      if (!hadError) {
+        localStorage.removeItem(this.chatMetadataRetryAfterKey);
+      }
+    };
+
     for (const chat of this.chats) {
       if (!chat.joined) {
         continue;
@@ -211,13 +244,16 @@ export class ChatListPage implements OnInit, OnDestroy {
         continue;
       }
 
-      request.subscribe({
+      pendingRequests++;
+
+      request.pipe(finalize(completeMetadataRequest)).subscribe({
         next: (response) => {
           const messages = response.messages ?? [];
 
           this.isOfflineMode = false;
           this.connectionMessage = '';
           localStorage.removeItem(this.chatApiRetryAfterKey);
+          localStorage.removeItem(this.apiWarningUntilKey);
 
           localStorage.setItem(this.getCachedMessagesKey(chat.chatid), JSON.stringify(messages));
 
@@ -231,8 +267,15 @@ export class ChatListPage implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Get chat messages metadata error:', error);
+          hadError = true;
+          this.showApiWarning();
+          this.setRetryAfter(this.chatMetadataRetryAfterKey, this.metadataRetryDelayMs);
         },
       });
+    }
+
+    if (pendingRequests === 0) {
+      this.isLoadingChatMetadata = false;
     }
   }
 
@@ -429,6 +472,18 @@ export class ChatListPage implements OnInit, OnDestroy {
     }
 
     return 'Server/API nicht erreichbar';
+  }
+
+  private showApiWarning(): void {
+    this.isOfflineMode = true;
+    this.connectionMessage = this.getConnectionFallbackMessage();
+    this.setRetryAfter(this.apiWarningUntilKey, this.apiWarningDelayMs);
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+  }
+
+  private hasApiWarning(): boolean {
+    return Date.now() < this.getRetryAfter(this.apiWarningUntilKey);
   }
 
   private showOfflineBanner(): void {
