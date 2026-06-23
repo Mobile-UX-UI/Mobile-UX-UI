@@ -63,8 +63,18 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
   private readonly failedPhotoIdsKey = 'failed_photo_ids';
   private readonly apiRetryDelayMs = 60000;
+  private readonly messagePollingIntervalMs = 3000;
+  private readonly messagePollingBackoffMs = 30000;
   private readonly handleOnline = () => this.flushPendingMessages();
+  private readonly handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      this.pollForNewMessages();
+    }
+  };
   private isFlushingPendingMessages = false;
+  private isMessageRequestInFlight = false;
+  private nextMessagePollAt = 0;
+  private messagePollingTimer?: number;
 
   chatid = '';
   chat?: Chat;
@@ -93,6 +103,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     this.loadChat();
     this.loadMessages();
     this.addOnlineListener();
+    this.startRealtimeUpdates();
     this.flushPendingMessages();
   }
 
@@ -100,6 +111,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     this.saveDraft();
     this.closeCamera();
     this.removeOnlineListener();
+    this.stopRealtimeUpdates();
 
     Object.values(this.photoUrls).forEach((url) => {
       if (url.startsWith('blob:')) {
@@ -151,6 +163,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   }
 
   loadMessages(): void {
+    if (this.isMessageRequestInFlight) return;
+
     const request = this.messageService.getMessages(undefined, this.chatid);
 
     if (!request) {
@@ -158,8 +172,11 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       return;
     }
 
+    this.isMessageRequestInFlight = true;
+
     request.subscribe({
       next: (response) => {
+        this.nextMessagePollAt = 0;
         this.messages = this.withPendingMessages([...(response.messages ?? [])]);
         console.log(
           'Saving messages under key:',
@@ -181,10 +198,85 @@ export class ChatDetailPage implements OnInit, OnDestroy {
         }, 0);
       },
       error: (error: unknown) => {
+        this.isMessageRequestInFlight = false;
+        this.nextMessagePollAt = Date.now() + this.messagePollingBackoffMs;
         console.error('Get messages error:', error);
         this.loadCachedMessages();
       },
+      complete: () => {
+        this.isMessageRequestInFlight = false;
+      },
     });
+  }
+
+  private pollForNewMessages(): void {
+    if (
+      this.isMessageRequestInFlight ||
+      Date.now() < this.nextMessagePollAt ||
+      !this.isOnline() ||
+      (typeof document !== 'undefined' && document.visibilityState === 'hidden')
+    ) {
+      return;
+    }
+
+    const currentMessages = this.messages.filter((message) => !message.pending);
+    const lastMessageId = currentMessages.at(-1)?.id;
+
+    const request = this.messageService.getMessages(lastMessageId, this.chatid);
+
+    if (!request) return;
+
+    this.isMessageRequestInFlight = true;
+
+    request.subscribe({
+      next: (response) => {
+        this.nextMessagePollAt = 0;
+        const incomingMessages = response.messages ?? [];
+        const knownIds = new Set(currentMessages.map((message) => String(message.id)));
+        const newMessages = incomingMessages.filter(
+          (message) => !knownIds.has(String(message.id)),
+        );
+
+        if (!newMessages.length) return;
+
+        const mergedMessages = [...currentMessages, ...newMessages];
+        this.messages = this.withPendingMessages(mergedMessages);
+        localStorage.setItem(this.getCachedMessagesKey(), JSON.stringify(mergedMessages));
+        this.markChatAsRead(mergedMessages);
+        this.loadPhotos();
+        this.cdr.detectChanges();
+        setTimeout(() => this.scrollToBottom(), 0);
+      },
+      error: (error: unknown) => {
+        this.isMessageRequestInFlight = false;
+        this.nextMessagePollAt = Date.now() + this.messagePollingBackoffMs;
+        console.error('Live message update error:', error);
+      },
+      complete: () => {
+        this.isMessageRequestInFlight = false;
+      },
+    });
+  }
+
+  private startRealtimeUpdates(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    this.messagePollingTimer = window.setInterval(
+      () => this.pollForNewMessages(),
+      this.messagePollingIntervalMs,
+    );
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+  }
+
+  private stopRealtimeUpdates(): void {
+    if (this.messagePollingTimer !== undefined) {
+      clearInterval(this.messagePollingTimer);
+      this.messagePollingTimer = undefined;
+    }
+
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    }
   }
 
   private loadCachedMessages(): void {

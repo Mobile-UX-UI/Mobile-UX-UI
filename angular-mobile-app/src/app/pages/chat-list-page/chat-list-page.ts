@@ -2,7 +2,6 @@ import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angula
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { finalize } from 'rxjs';
 
 import { BottomNavbar } from '../../components/bottom-navbar/bottom-navbar';
 import { ChatListItem } from '../../components/chat-list-item/chat-list-item';
@@ -44,12 +43,14 @@ export class ChatListPage implements OnInit, OnDestroy {
   private readonly chatMetadataRetryAfterKey = 'chat_metadata_retry_after';
   private readonly apiWarningUntilKey = 'api_warning_until';
   private readonly apiRetryDelayMs = 60000;
-  private readonly metadataRetryDelayMs = 120000;
+  private readonly metadataRefreshIntervalMs = 3000;
   private readonly apiWarningDelayMs = 90000;
   private readonly handleOnline = () => this.loadChats();
   private readonly handleOffline = () => this.showOfflineBanner();
   private refreshIntervalId?: ReturnType<typeof setInterval>;
+  private metadataRefreshIntervalId?: ReturnType<typeof setInterval>;
   private isLoadingChatMetadata = false;
+  private nextMetadataChatIndex = 0;
 
   chats: Chat[] = [];
   chatMetadata: Record<string, ChatListMetadata> = {};
@@ -63,11 +64,19 @@ export class ChatListPage implements OnInit, OnDestroy {
     this.addConnectionListeners();
     this.loadChats();
     this.refreshIntervalId = setInterval(() => this.loadChats(), 60000);
+    this.metadataRefreshIntervalId = setInterval(
+      () => this.loadChatMetadata(),
+      this.metadataRefreshIntervalMs,
+    );
   }
 
   ngOnDestroy(): void {
     if (this.refreshIntervalId) {
       clearInterval(this.refreshIntervalId);
+    }
+
+    if (this.metadataRefreshIntervalId) {
+      clearInterval(this.metadataRefreshIntervalId);
     }
 
     this.removeConnectionListeners();
@@ -157,7 +166,7 @@ export class ChatListPage implements OnInit, OnDestroy {
   }
 
   openChat(chat: Chat): void {
-    if (!chat.joined) {
+    if (!this.isJoinedChat(chat)) {
       return;
     }
 
@@ -210,6 +219,7 @@ export class ChatListPage implements OnInit, OnDestroy {
     this.loadChatMetadataFromCache();
 
     if (
+      this.chats.length === 0 ||
       this.isBrowserOffline() ||
       this.isLoadingChatMetadata ||
       Date.now() < this.getRetryAfter(this.chatMetadataRetryAfterKey)
@@ -217,66 +227,53 @@ export class ChatListPage implements OnInit, OnDestroy {
       return;
     }
 
+    const joinedChats = this.chats.filter((chat) => this.isJoinedChat(chat));
+
+    if (joinedChats.length === 0) return;
+
+    const chat = joinedChats[this.nextMetadataChatIndex % joinedChats.length];
+    this.nextMetadataChatIndex = (this.nextMetadataChatIndex + 1) % joinedChats.length;
+
+    const request = this.messageService.getMessages(undefined, chat.chatid);
+
+    if (!request) return;
+
     this.isLoadingChatMetadata = true;
-    let pendingRequests = 0;
-    let hadError = false;
+    request.subscribe({
+      next: (response) => {
+        const messages = response.messages ?? [];
+        localStorage.setItem(this.getCachedMessagesKey(chat.chatid), JSON.stringify(messages));
 
-    const completeMetadataRequest = (): void => {
-      pendingRequests--;
+        this.chatMetadata = {
+          ...this.chatMetadata,
+          [String(chat.chatid)]: this.createChatMetadata(chat.chatid, messages),
+        };
 
-      if (pendingRequests > 0) return;
-
-      this.isLoadingChatMetadata = false;
-
-      if (!hadError) {
+        this.isOfflineMode = false;
+        this.connectionMessage = '';
+        localStorage.removeItem(this.chatApiRetryAfterKey);
         localStorage.removeItem(this.chatMetadataRetryAfterKey);
-      }
-    };
+        localStorage.removeItem(this.apiWarningUntilKey);
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.isLoadingChatMetadata = false;
+        console.error('Get chat messages metadata error:', error);
+        this.showApiWarning();
+      },
+      complete: () => {
+        this.isLoadingChatMetadata = false;
+      },
+    });
+  }
 
-    for (const chat of this.chats) {
-      if (!chat.joined) {
-        continue;
-      }
+  private isJoinedChat(chat: Chat): boolean {
+    const joined = String(chat.joined).toLowerCase();
+    const hasJoinedFlag = joined === 'true' || joined === '1';
+    const hasMemberRole = ['owner', 'member', 'admin'].includes(chat.role);
 
-      const request = this.messageService.getMessages(undefined, chat.chatid);
-
-      if (!request) {
-        continue;
-      }
-
-      pendingRequests++;
-
-      request.pipe(finalize(completeMetadataRequest)).subscribe({
-        next: (response) => {
-          const messages = response.messages ?? [];
-
-          this.isOfflineMode = false;
-          this.connectionMessage = '';
-          localStorage.removeItem(this.chatApiRetryAfterKey);
-          localStorage.removeItem(this.apiWarningUntilKey);
-
-          localStorage.setItem(this.getCachedMessagesKey(chat.chatid), JSON.stringify(messages));
-
-          this.chatMetadata = {
-            ...this.chatMetadata,
-            [String(chat.chatid)]: this.createChatMetadata(chat.chatid, messages),
-          };
-
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('Get chat messages metadata error:', error);
-          hadError = true;
-          this.showApiWarning();
-          this.setRetryAfter(this.chatMetadataRetryAfterKey, this.metadataRetryDelayMs);
-        },
-      });
-    }
-
-    if (pendingRequests === 0) {
-      this.isLoadingChatMetadata = false;
-    }
+    return hasJoinedFlag || hasMemberRole;
   }
 
   private loadChatMetadataFromCache(): void {

@@ -1,0 +1,10 @@
+{
+  "/api": {
+    "target": "https://www2.hs-esslingen.de",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": "/~nitzsche/api"
+    }
+  }
+}

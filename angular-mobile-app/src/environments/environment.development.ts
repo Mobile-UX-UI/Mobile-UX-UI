@@ -1,5 +1,5 @@
 export const environment = {
-  production: true,
-  apiUrl: 'https://www2.hs-esslingen.de/~nitzsche/api/',
+  production: false,
+  apiUrl: '/api/',
   googleMapsApiKey: 'AIzaSyAS005ufvdSzwD-ZRkYiz4OOizBwjrIi5s',
 };

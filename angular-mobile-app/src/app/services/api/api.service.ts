@@ -38,7 +38,7 @@ export class ApiService {
     params?: Record<string, string | number | boolean>,
     options?: { noCache?: boolean },
   ): string {
-    const url = new URL(this.baseUrl);
+    const url = new URL(this.baseUrl, globalThis.location?.origin ?? 'http://localhost');
     url.searchParams.set('request', request);
 
     if (params) {
