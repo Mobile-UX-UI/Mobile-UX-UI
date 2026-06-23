@@ -63,8 +63,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
   private readonly failedPhotoIdsKey = 'failed_photo_ids';
   private readonly apiRetryDelayMs = 60000;
-  private readonly messagePollingIntervalMs = 3000;
-  private readonly messagePollingBackoffMs = 30000;
+  private readonly messagePollingIntervalMs = 2000;
+  private readonly messagePollingBackoffMs = 15000;
   private readonly handleOnline = () => this.flushPendingMessages();
   private readonly handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
