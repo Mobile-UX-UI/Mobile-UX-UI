@@ -120,16 +120,16 @@ Build the app with:
 
 ```bash
 cd angular-mobile-app
-npx ng build --base-href=/Mobile-UX-UI/
+npx ng build --configuration production --base-href=/Mobile-UX-UI/
 ```
 
 ### 2. Deploy to GitHub Pages
 
 ```bash
-npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser
+npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser --repo=https://github.com/mobile-ux-ui/Mobile-UX-UI.git --branch=gh-pages
 ```
 
-This publishes the build output to the `gh-pages` branch.
+This publishes the build output to the `gh-pages` branch of the `mobile-ux-ui/Mobile-UX-UI` organization repository. You need write access to that repository.
 
 ### 3. GitHub Pages settings
 
@@ -175,8 +175,8 @@ Then deploy the updated app:
 
 ```bash
 cd angular-mobile-app
-npx ng build --base-href=/Mobile-UX-UI/
-npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser
+npx ng build --configuration production --base-href=/Mobile-UX-UI/
+npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser --repo=https://github.com/mobile-ux-ui/Mobile-UX-UI.git --branch=gh-pages
 ```
 
 The `main` branch contains the source code.  
@@ -202,12 +202,12 @@ Build for GitHub Pages:
 
 ```bash
 cd angular-mobile-app
-npx ng build --base-href=/Mobile-UX-UI/
+npx ng build --configuration production --base-href=/Mobile-UX-UI/
 ```
 
 Deploy:
 
 ```bash
 cd angular-mobile-app
-npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser
+npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser --repo=https://github.com/mobile-ux-ui/Mobile-UX-UI.git --branch=gh-pages
 ```
