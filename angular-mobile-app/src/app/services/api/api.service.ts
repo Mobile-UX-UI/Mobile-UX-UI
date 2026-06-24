@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { SKIP_LOADING } from './loading.interceptor';
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +15,7 @@ export class ApiService {
   public get<T>(
     request: string,
     params?: Record<string, string | number | boolean>,
-    options?: { noCache?: boolean },
+    options?: { noCache?: boolean; silent?: boolean },
   ): Observable<T> {
     let httpParams = new HttpParams().set('request', request);
 
@@ -30,6 +31,7 @@ export class ApiService {
 
     return this.http.get<T>(this.baseUrl, {
       params: httpParams,
+      context: new HttpContext().set(SKIP_LOADING, options?.silent ?? false),
     });
   }
 

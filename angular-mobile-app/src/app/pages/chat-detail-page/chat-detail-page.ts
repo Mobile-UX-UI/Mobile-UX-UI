@@ -222,7 +222,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     const currentMessages = this.messages.filter((message) => !message.pending);
     const lastMessageId = currentMessages.at(-1)?.id;
 
-    const request = this.messageService.getMessages(lastMessageId, this.chatid);
+    const request = this.messageService.getMessages(lastMessageId, this.chatid, undefined, true);
 
     if (!request) return;
 

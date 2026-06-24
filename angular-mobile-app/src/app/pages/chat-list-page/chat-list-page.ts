@@ -43,7 +43,7 @@ export class ChatListPage implements OnInit, OnDestroy {
   private readonly chatMetadataRetryAfterKey = 'chat_metadata_retry_after';
   private readonly apiWarningUntilKey = 'api_warning_until';
   private readonly apiRetryDelayMs = 60000;
-  private readonly metadataRefreshIntervalMs = 3000;
+  private readonly metadataRefreshIntervalMs = 1500;
   private readonly apiWarningDelayMs = 90000;
   private readonly handleOnline = () => this.loadChats();
   private readonly handleOffline = () => this.showOfflineBanner();
@@ -51,6 +51,7 @@ export class ChatListPage implements OnInit, OnDestroy {
   private metadataRefreshIntervalId?: ReturnType<typeof setInterval>;
   private isLoadingChatMetadata = false;
   private nextMetadataChatIndex = 0;
+  private joiningChatIds = new Set<string>();
 
   chats: Chat[] = [];
   chatMetadata: Record<string, ChatListMetadata> = {};
@@ -166,10 +167,51 @@ export class ChatListPage implements OnInit, OnDestroy {
   }
 
   openChat(chat: Chat): void {
-    if (!this.isJoinedChat(chat)) {
+    if (this.isJoinedChat(chat)) {
+      this.navigateToChat(chat);
       return;
     }
 
+    if (chat.visibility !== 'public' || this.joiningChatIds.has(String(chat.chatid))) {
+      return;
+    }
+
+    const request = this.chatService.joinChat(chat.chatid);
+
+    if (!request) return;
+
+    this.joiningChatIds.add(String(chat.chatid));
+    request.subscribe({
+      next: (response) => {
+        if (response.status !== 'ok') {
+          this.showApiWarning();
+          return;
+        }
+
+        const joinedChat: Chat = {
+          ...chat,
+          joined: true,
+          role: chat.role === 'none' ? 'member' : chat.role,
+        };
+
+        this.chats = this.chats.map((currentChat) =>
+          String(currentChat.chatid) === String(chat.chatid) ? joinedChat : currentChat,
+        );
+        localStorage.setItem(this.cachedChatsKey, JSON.stringify(this.chats));
+        this.navigateToChat(joinedChat);
+      },
+      error: (error) => {
+        this.joiningChatIds.delete(String(chat.chatid));
+        console.error('Join public chat error:', error);
+        this.showApiWarning();
+      },
+      complete: () => {
+        this.joiningChatIds.delete(String(chat.chatid));
+      },
+    });
+  }
+
+  private navigateToChat(chat: Chat): void {
     this.markChatAsRead(chat.chatid);
     this.router.navigate(['/chats', chat.chatid]);
   }
@@ -216,7 +258,7 @@ export class ChatListPage implements OnInit, OnDestroy {
   }
 
   private loadChatMetadata(): void {
-    this.loadChatMetadataFromCache();
+    this.initializeMissingChatMetadataFromCache();
 
     if (
       this.chats.length === 0 ||
@@ -234,7 +276,7 @@ export class ChatListPage implements OnInit, OnDestroy {
     const chat = joinedChats[this.nextMetadataChatIndex % joinedChats.length];
     this.nextMetadataChatIndex = (this.nextMetadataChatIndex + 1) % joinedChats.length;
 
-    const request = this.messageService.getMessages(undefined, chat.chatid);
+    const request = this.messageService.getMessages(undefined, chat.chatid, undefined, true);
 
     if (!request) return;
 
@@ -242,11 +284,30 @@ export class ChatListPage implements OnInit, OnDestroy {
     request.subscribe({
       next: (response) => {
         const messages = response.messages ?? [];
+        const previousMessages = this.getCachedMessages(chat.chatid);
+        const previousMessageIds = new Set(
+          previousMessages.map((message) => String(message.id)),
+        );
+        const newIncomingCount = messages.filter(
+          (message) =>
+            !previousMessageIds.has(String(message.id)) && !this.isOwnMessage(message),
+        ).length;
+        const previousMetadata = this.chatMetadata[String(chat.chatid)];
+        const calculatedMetadata = this.createChatMetadata(chat.chatid, messages);
+        const unreadCount = (previousMetadata?.unreadCount ?? 0) + newIncomingCount;
+
         localStorage.setItem(this.getCachedMessagesKey(chat.chatid), JSON.stringify(messages));
 
         this.chatMetadata = {
           ...this.chatMetadata,
-          [String(chat.chatid)]: this.createChatMetadata(chat.chatid, messages),
+          [String(chat.chatid)]: {
+            ...calculatedMetadata,
+            unreadCount: Math.max(calculatedMetadata.unreadCount, unreadCount),
+            hasUnreadMessages:
+              calculatedMetadata.hasUnreadMessages ||
+              previousMetadata?.hasUnreadMessages === true ||
+              newIncomingCount > 0,
+          },
         };
 
         this.isOfflineMode = false;
@@ -289,6 +350,23 @@ export class ChatListPage implements OnInit, OnDestroy {
     this.chatMetadata = metadata;
   }
 
+  private initializeMissingChatMetadataFromCache(): void {
+    const metadata = { ...this.chatMetadata };
+
+    for (const chat of this.chats) {
+      const chatid = String(chat.chatid);
+
+      if (!metadata[chatid]) {
+        metadata[chatid] = this.createChatMetadata(
+          chat.chatid,
+          this.getCachedMessages(chat.chatid),
+        );
+      }
+    }
+
+    this.chatMetadata = metadata;
+  }
+
   private createChatMetadata(chatid: string, messages: ApiMessage[]): ChatListMetadata {
     const sortedMessages = [...messages].sort(
       (a, b) => this.getMessageTimestamp(a.time) - this.getMessageTimestamp(b.time),
@@ -312,14 +390,14 @@ export class ChatListPage implements OnInit, OnDestroy {
 
     if (!readMarker) return 0;
 
-    const currentUserHash = this.authService.getCurrentUserHash();
-    const readMessageIndex = messages.findIndex((message) => message.id === readMarker.lastMessageId);
+    const readMessageIndex = messages.findIndex(
+      (message) => String(message.id) === String(readMarker.lastMessageId),
+    );
 
     if (readMessageIndex >= 0) {
-      return messages.slice(readMessageIndex + 1).filter((message) => {
-        const isOwnMessage = currentUserHash && message.userhash === currentUserHash;
-        return !isOwnMessage;
-      }).length;
+      return messages
+        .slice(readMessageIndex + 1)
+        .filter((message) => !this.isOwnMessage(message)).length;
     }
 
     const readTime = readMarker.lastMessageTime
@@ -327,17 +405,14 @@ export class ChatListPage implements OnInit, OnDestroy {
       : 0;
 
     return messages.filter((message) => {
-      const isOwnMessage = currentUserHash && message.userhash === currentUserHash;
-      return !isOwnMessage && this.getMessageTimestamp(message.time) > readTime;
+      return !this.isOwnMessage(message) && this.getMessageTimestamp(message.time) > readTime;
     }).length;
   }
 
   private hasUnreadLatestMessage(chatid: string, lastMessage?: ApiMessage): boolean {
     if (!lastMessage) return false;
 
-    const currentUserHash = this.authService.getCurrentUserHash();
-
-    if (currentUserHash && lastMessage.userhash === currentUserHash) {
+    if (this.isOwnMessage(lastMessage)) {
       return false;
     }
 
@@ -346,12 +421,25 @@ export class ChatListPage implements OnInit, OnDestroy {
     if (!readMarker) return true;
 
     if (readMarker.lastMessageId && lastMessage.id) {
-      return readMarker.lastMessageId !== lastMessage.id;
+      return String(readMarker.lastMessageId) !== String(lastMessage.id);
     }
 
     if (!readMarker.lastMessageTime) return false;
 
     return this.getMessageTimestamp(lastMessage.time) > this.getMessageTimestamp(readMarker.lastMessageTime);
+  }
+
+  private isOwnMessage(message: ApiMessage): boolean {
+    const currentProfile = this.authService.getUserProfile();
+
+    if (currentProfile?.userid && message.userid) {
+      return String(message.userid).trim().toLowerCase() ===
+        String(currentProfile.userid).trim().toLowerCase();
+    }
+
+    return !!currentProfile?.hash &&
+      !!message.userhash &&
+      String(message.userhash) === String(currentProfile.hash);
   }
 
   private markChatAsRead(chatid: string): void {

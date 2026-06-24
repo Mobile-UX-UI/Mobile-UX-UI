@@ -17,6 +17,7 @@ export class MessageService {
     fromid?: string,
     chatid?: string,
     key?: string,
+    silent = false,
   ): Observable<MessagesResponse> | null {
     const token = this.auth.getToken();
 
@@ -38,7 +39,10 @@ export class MessageService {
       params['key'] = key;
     }
 
-    return this.api.get<MessagesResponse>('getmessages', params, { noCache: true });
+    return this.api.get<MessagesResponse>('getmessages', params, {
+      noCache: true,
+      silent,
+    });
   }
 
   public postMessage(
