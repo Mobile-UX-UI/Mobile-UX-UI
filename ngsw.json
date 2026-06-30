@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1782297333739,
+  "timestamp": 1782851016808,
   "index": "/Mobile-UX-UI/index.html",
   "assetGroups": [
     {
@@ -13,8 +13,8 @@
       "urls": [
         "/Mobile-UX-UI/favicon.ico",
         "/Mobile-UX-UI/index.html",
-        "/Mobile-UX-UI/main-TXC6D3WU.js",
-        "/Mobile-UX-UI/styles-646ZTOMK.css"
+        "/Mobile-UX-UI/main-54YKO7KI.js",
+        "/Mobile-UX-UI/styles-REUC6CYT.css"
       ],
       "patterns": []
     },
@@ -32,9 +32,9 @@
   "dataGroups": [],
   "hashTable": {
     "/Mobile-UX-UI/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
-    "/Mobile-UX-UI/index.html": "4098209369b58821feb3162857b9516f3ac5c8bb",
-    "/Mobile-UX-UI/main-TXC6D3WU.js": "eaf1e1efc64d4bef1d19251b0cd3dd490a506541",
-    "/Mobile-UX-UI/styles-646ZTOMK.css": "13707fb0822e05e26222a6eca70e9ef5edd00c13"
+    "/Mobile-UX-UI/index.html": "8ed8e8c371c3c95f06c787d428ab154dd397585b",
+    "/Mobile-UX-UI/main-54YKO7KI.js": "7113c8abd2de65cee01f73e0077bcedd11111299",
+    "/Mobile-UX-UI/styles-REUC6CYT.css": "b754bf1f0c8af6454cc2932115ec5e6f4830519e"
   },
   "navigationUrls": [
     {
