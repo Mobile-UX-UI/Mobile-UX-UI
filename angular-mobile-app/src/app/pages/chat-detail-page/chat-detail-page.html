@@ -106,6 +106,7 @@
         (pointerup)="cancelMessageLongPress()"
         (pointercancel)="cancelMessageLongPress()"
         (pointerleave)="cancelMessageLongPress()"
+        (contextmenu)="preventMessageContextMenu($event)"
       >
         @if (!isMyMessage(message)) {
           <div class="message-avatar">

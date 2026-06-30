@@ -63,7 +63,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
   private readonly failedPhotoIdsKey = 'failed_photo_ids';
   private readonly pinnedMessagesKey = 'pinned_messages';
-  private readonly longPressDurationMs = 550;
+  private readonly longPressDurationMs = 400;
   private readonly apiRetryDelayMs = 60000;
   private readonly messagePollingIntervalMs = 2000;
   private readonly messagePollingBackoffMs = 15000;
@@ -771,6 +771,10 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     this.longPressTimer = undefined;
     this.longPressPointerId = undefined;
+  }
+
+  preventMessageContextMenu(event: Event): void {
+    event.preventDefault();
   }
 
   togglePinnedMessage(message: ChatMessage): void {

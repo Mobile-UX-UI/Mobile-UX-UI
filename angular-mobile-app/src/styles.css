@@ -331,6 +331,15 @@ body.dark-mode .offline-banner {
   border-radius: 18px;
   transition: background-color 180ms ease, box-shadow 180ms ease;
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.message-row * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .pinned-message-row {
