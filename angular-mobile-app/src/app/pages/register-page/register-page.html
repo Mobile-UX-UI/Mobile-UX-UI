@@ -6,58 +6,54 @@
   </button>
 
   <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
-    @if (getFieldError('userid')) {
+    <div class="register-field">
       <p class="field-error">{{ getFieldError('userid') }}</p>
-    }
-    <mat-form-field appearance="outline" class="full">
-      <input matInput placeholder="HSE userid" formControlName="userid" />
-    </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <input matInput placeholder="HSE userid" formControlName="userid" />
+      </mat-form-field>
+    </div>
 
     <div class="row">
       <div class="row-field">
-        @if (getFieldError('firstName')) {
-          <p class="field-error">{{ getFieldError('firstName') }}</p>
-        }
+        <p class="field-error">{{ getFieldError('firstName') }}</p>
         <mat-form-field appearance="outline">
           <input matInput placeholder="First name" formControlName="firstName" />
         </mat-form-field>
       </div>
 
       <div class="row-field">
-        @if (getFieldError('lastName')) {
-          <p class="field-error">{{ getFieldError('lastName') }}</p>
-        }
+        <p class="field-error">{{ getFieldError('lastName') }}</p>
         <mat-form-field appearance="outline">
           <input matInput placeholder="Last name" formControlName="lastName" />
         </mat-form-field>
       </div>
     </div>
 
-    @if (getFieldError('nickname')) {
+    <div class="register-field">
       <p class="field-error">{{ getFieldError('nickname') }}</p>
-    }
-    <mat-form-field appearance="outline" class="full">
-      <input matInput placeholder="Nickname" formControlName="nickname" />
-    </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <input matInput placeholder="Nickname" formControlName="nickname" />
+      </mat-form-field>
+    </div>
 
-    @if (getFieldError('password')) {
+    <div class="register-field">
       <p class="field-error">{{ getFieldError('password') }}</p>
-    }
-    <mat-form-field appearance="outline" class="full">
-      <input matInput type="password" placeholder="Password" formControlName="password" />
-    </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <input matInput type="password" placeholder="Password" formControlName="password" />
+      </mat-form-field>
+    </div>
 
-    @if (getFieldError('repeatPassword')) {
+    <div class="register-field">
       <p class="field-error">{{ getFieldError('repeatPassword') }}</p>
-    }
-    <mat-form-field appearance="outline" class="full">
-      <input
-        matInput
-        type="password"
-        placeholder="Repeat your password"
-        formControlName="repeatPassword"
-      />
-    </mat-form-field>
+      <mat-form-field appearance="outline" class="full">
+        <input
+          matInput
+          type="password"
+          placeholder="Repeat your password"
+          formControlName="repeatPassword"
+        />
+      </mat-form-field>
+    </div>
 
     <p *ngIf="errorMessage" class="error-text">
       {{ errorMessage }}

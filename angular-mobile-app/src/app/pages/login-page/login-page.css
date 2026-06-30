@@ -69,7 +69,7 @@
 }
 
 .field-group {
-  margin-bottom: 18px;
+  margin-bottom: 8px;
 }
 
 .field-group label {
@@ -82,12 +82,17 @@
 }
 
 .field-error {
-  margin: 0 0 6px;
+  margin: 0 0 2px;
+  height: 14px;
+  overflow: hidden;
 
   color: #c62828;
 
   font-size: 12px;
+  line-height: 14px;
   font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .full-width {
@@ -151,7 +156,7 @@
   }
 
   .field-group {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .login-button {
