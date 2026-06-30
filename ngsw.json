@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1782852830734,
+  "timestamp": 1782854450645,
   "index": "/Mobile-UX-UI/index.html",
   "assetGroups": [
     {
@@ -13,7 +13,7 @@
       "urls": [
         "/Mobile-UX-UI/favicon.ico",
         "/Mobile-UX-UI/index.html",
-        "/Mobile-UX-UI/main-F4P5MMCO.js",
+        "/Mobile-UX-UI/main-RWPFCNE7.js",
         "/Mobile-UX-UI/styles-FBLAZBSI.css"
       ],
       "patterns": []
@@ -32,8 +32,8 @@
   "dataGroups": [],
   "hashTable": {
     "/Mobile-UX-UI/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
-    "/Mobile-UX-UI/index.html": "e642dfdd4cfcc5e708545aca814e22fab39e35ae",
-    "/Mobile-UX-UI/main-F4P5MMCO.js": "b7c5f4309a5a2e7d77cd4004b04192d6e6deaa68",
+    "/Mobile-UX-UI/index.html": "fafba9f80a454b3a53082fdb32109758c4b33e7e",
+    "/Mobile-UX-UI/main-RWPFCNE7.js": "478cc4852d814aad4f704a475957ed72286b1161",
     "/Mobile-UX-UI/styles-FBLAZBSI.css": "8aafa578354233987974e1cabe15ed9963b700b7"
   },
   "navigationUrls": [
