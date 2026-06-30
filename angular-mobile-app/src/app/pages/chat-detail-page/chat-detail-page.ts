@@ -64,8 +64,9 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly failedPhotoIdsKey = 'failed_photo_ids';
   private readonly pinnedMessagesKey = 'pinned_messages';
   private readonly longPressDurationMs = 400;
+  private readonly maxPhotoDimension = 1024;
   private readonly apiRetryDelayMs = 60000;
-  private readonly messagePollingIntervalMs = 2000;
+  private readonly messagePollingIntervalMs = 5000;
   private readonly messagePollingBackoffMs = 15000;
   private readonly handleOnline = () => this.flushPendingMessages();
   private readonly handleVisibilityChange = () => {
@@ -389,21 +390,16 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     reader.onload = () => {
       const source = reader.result as string;
-
-      if (file.type === 'image/png') {
-        this.selectedPhotoBase64 = source;
-        this.isAttachmentMenuOpen = false;
-        this.actionMessage = '';
-        this.cdr.detectChanges();
-        return;
-      }
-
       const image = new Image();
 
       image.onload = () => {
+        const scale = Math.min(
+          1,
+          this.maxPhotoDimension / Math.max(image.naturalWidth, image.naturalHeight),
+        );
         const canvas = document.createElement('canvas');
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
 
         const context = canvas.getContext('2d');
 
@@ -413,7 +409,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
           return;
         }
 
-        context.drawImage(image, 0, 0);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
         this.selectedPhotoBase64 = canvas.toDataURL('image/png');
         this.isAttachmentMenuOpen = false;
         this.actionMessage = '';
@@ -482,9 +478,13 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     if (!video) return;
 
+    const scale = Math.min(
+      1,
+      this.maxPhotoDimension / Math.max(video.videoWidth, video.videoHeight),
+    );
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
 
     const context = canvas.getContext('2d');
 

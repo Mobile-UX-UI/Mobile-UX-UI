@@ -404,7 +404,7 @@
 
 .messages-container {
   flex: 1;
-  padding: 24px 16px 150px;
+  padding: 24px 16px 85px;
   overflow-y: auto;
 }
 

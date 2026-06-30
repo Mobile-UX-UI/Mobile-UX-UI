@@ -43,7 +43,8 @@ export class ChatListPage implements OnInit, OnDestroy {
   private readonly chatMetadataRetryAfterKey = 'chat_metadata_retry_after';
   private readonly apiWarningUntilKey = 'api_warning_until';
   private readonly apiRetryDelayMs = 60000;
-  private readonly metadataRefreshIntervalMs = 1500;
+  private readonly metadataRefreshIntervalMs = 5000;
+  private readonly metadataRetryDelayMs = 15000;
   private readonly apiWarningDelayMs = 90000;
   private readonly handleOnline = () => this.loadChats();
   private readonly handleOffline = () => this.showOfflineBanner();
@@ -321,6 +322,7 @@ export class ChatListPage implements OnInit, OnDestroy {
       error: (error) => {
         this.isLoadingChatMetadata = false;
         console.error('Get chat messages metadata error:', error);
+        this.setRetryAfter(this.chatMetadataRetryAfterKey, this.metadataRetryDelayMs);
         this.showApiWarning();
       },
       complete: () => {
