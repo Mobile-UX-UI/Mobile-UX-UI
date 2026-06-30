@@ -388,9 +388,46 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     const reader = new FileReader();
 
     reader.onload = () => {
-      this.selectedPhotoBase64 = reader.result as string;
-      this.isAttachmentMenuOpen = false;
-      this.cdr.detectChanges();
+      const source = reader.result as string;
+
+      if (file.type === 'image/png') {
+        this.selectedPhotoBase64 = source;
+        this.isAttachmentMenuOpen = false;
+        this.actionMessage = '';
+        this.cdr.detectChanges();
+        return;
+      }
+
+      const image = new Image();
+
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+
+        const context = canvas.getContext('2d');
+
+        if (!context) {
+          this.actionMessage = 'The photo could not be converted to PNG.';
+          this.cdr.detectChanges();
+          return;
+        }
+
+        context.drawImage(image, 0, 0);
+        this.selectedPhotoBase64 = canvas.toDataURL('image/png');
+        this.isAttachmentMenuOpen = false;
+        this.actionMessage = '';
+        this.cdr.detectChanges();
+      };
+
+      image.onerror = () => {
+        this.selectedPhotoBase64 = '';
+        this.isAttachmentMenuOpen = false;
+        this.actionMessage = 'This photo format cannot be converted to PNG.';
+        this.cdr.detectChanges();
+      };
+
+      image.src = source;
     };
 
     reader.readAsDataURL(file);
