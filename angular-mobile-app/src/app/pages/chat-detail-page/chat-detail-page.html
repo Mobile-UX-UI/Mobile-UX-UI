@@ -52,6 +52,40 @@
     <p class="chat-action-message">{{ actionMessage }}</p>
   }
 
+  @if (pinnedMessages.length) {
+    <section class="pinned-messages">
+      <button class="pinned-messages-summary" type="button" (click)="togglePinnedMessages()">
+        <mat-icon>push_pin</mat-icon>
+        <span>
+          <strong>{{ pinnedMessages.length }} pinned</strong>
+          <small>{{ getPinnedMessagePreview(pinnedMessages[pinnedMessages.length - 1]) }}</small>
+        </span>
+        <mat-icon>{{ isPinnedMessagesOpen ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </button>
+
+      @if (isPinnedMessagesOpen) {
+        <div class="pinned-messages-list">
+          @for (message of pinnedMessages; track message.id) {
+            <div class="pinned-message-item">
+              <button type="button" class="pinned-message-jump" (click)="scrollToMessage(message.id)">
+                <strong>{{ message.usernick || message.username || message.userid }}</strong>
+                <span>{{ getPinnedMessagePreview(message) }}</span>
+              </button>
+              <button
+                type="button"
+                class="unpin-message-button"
+                aria-label="Unpin message"
+                (click)="togglePinnedMessage(message)"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
   <main class="messages-container" #messagesContainer>
     @for (message of messages; track message.id; let i = $index) {
       @if (shouldShowDateSeparator(i)) {
@@ -62,8 +96,16 @@
 
       <div
         class="message-row"
+        [id]="getMessageElementId(message.id)"
         [class.my-message-row]="isMyMessage(message)"
         [class.pending-message-row]="message.pending"
+        [class.pinned-message-row]="isMessagePinned(message)"
+        [class.highlighted-message-row]="highlightedMessageId === message.id"
+        (pointerdown)="startMessageLongPress($event, message)"
+        (pointermove)="moveMessageLongPress($event)"
+        (pointerup)="cancelMessageLongPress()"
+        (pointercancel)="cancelMessageLongPress()"
+        (pointerleave)="cancelMessageLongPress()"
       >
         @if (!isMyMessage(message)) {
           <div class="message-avatar">
@@ -158,6 +200,9 @@
           }
 
           <div class="message-time">
+            @if (isMessagePinned(message)) {
+              <mat-icon class="message-pin-icon">push_pin</mat-icon>
+            }
             @if (message.pending) {
               Wird gesendet...
             } @else {

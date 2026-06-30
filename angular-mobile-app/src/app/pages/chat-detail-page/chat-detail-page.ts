@@ -62,6 +62,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly cachedChatsKey = 'cached_chats';
   private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
   private readonly failedPhotoIdsKey = 'failed_photo_ids';
+  private readonly pinnedMessagesKey = 'pinned_messages';
+  private readonly longPressDurationMs = 550;
   private readonly apiRetryDelayMs = 60000;
   private readonly messagePollingIntervalMs = 2000;
   private readonly messagePollingBackoffMs = 15000;
@@ -75,6 +77,10 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private isMessageRequestInFlight = false;
   private nextMessagePollAt = 0;
   private messagePollingTimer?: number;
+  private longPressTimer?: ReturnType<typeof setTimeout>;
+  private longPressPointerId?: number;
+  private longPressStartX = 0;
+  private longPressStartY = 0;
 
   chatid = '';
   chat?: Chat;
@@ -93,12 +99,16 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   isChatMenuOpen = false;
   isMembersListOpen = false;
+  isPinnedMessagesOpen = false;
+  pinnedMessageIds: string[] = [];
+  highlightedMessageId = '';
   actionMessage = '';
 
   private cameraStream?: MediaStream;
 
   ngOnInit(): void {
     this.chatid = this.route.snapshot.paramMap.get('chatid') ?? '';
+    this.pinnedMessageIds = this.getSavedPinnedMessageIds();
     this.newMessageText = this.getDraftText();
     this.loadChat();
     this.loadMessages();
@@ -112,12 +122,14 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     this.closeCamera();
     this.removeOnlineListener();
     this.stopRealtimeUpdates();
+    this.cancelMessageLongPress();
 
     Object.values(this.photoUrls).forEach((url) => {
       if (url.startsWith('blob:')) {
         URL.revokeObjectURL(url);
       }
     });
+
   }
 
   loadChat(): void {
@@ -710,6 +722,110 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     return message.userhash === currentUserHash;
   }
 
+  get pinnedMessages(): ChatMessage[] {
+    const messagesById = new Map(
+      this.messages.map((message) => [String(message.id), message]),
+    );
+
+    return this.pinnedMessageIds
+      .map((id) => messagesById.get(id))
+      .filter((message): message is ChatMessage => !!message);
+  }
+
+  isMessagePinned(message: ChatMessage): boolean {
+    return this.pinnedMessageIds.includes(String(message.id));
+  }
+
+  startMessageLongPress(event: PointerEvent, message: ChatMessage): void {
+    if (message.pending || event.button !== 0) return;
+
+    this.cancelMessageLongPress();
+    this.longPressPointerId = event.pointerId;
+    this.longPressStartX = event.clientX;
+    this.longPressStartY = event.clientY;
+    this.longPressTimer = setTimeout(() => {
+      this.togglePinnedMessage(message);
+      this.longPressTimer = undefined;
+
+      if ('vibrate' in navigator) {
+        navigator.vibrate(35);
+      }
+    }, this.longPressDurationMs);
+  }
+
+  moveMessageLongPress(event: PointerEvent): void {
+    if (event.pointerId !== this.longPressPointerId) return;
+
+    const movedX = Math.abs(event.clientX - this.longPressStartX);
+    const movedY = Math.abs(event.clientY - this.longPressStartY);
+
+    if (movedX > 10 || movedY > 10) {
+      this.cancelMessageLongPress();
+    }
+  }
+
+  cancelMessageLongPress(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+    }
+
+    this.longPressTimer = undefined;
+    this.longPressPointerId = undefined;
+  }
+
+  togglePinnedMessage(message: ChatMessage): void {
+    if (message.pending) return;
+
+    const messageId = String(message.id);
+
+    if (this.isMessagePinned(message)) {
+      this.pinnedMessageIds = this.pinnedMessageIds.filter((id) => id !== messageId);
+    } else {
+      this.pinnedMessageIds = [...this.pinnedMessageIds, messageId];
+    }
+
+    this.savePinnedMessageIds();
+
+    if (!this.pinnedMessageIds.length) {
+      this.isPinnedMessagesOpen = false;
+    }
+  }
+
+  togglePinnedMessages(): void {
+    this.isPinnedMessagesOpen = !this.isPinnedMessagesOpen;
+  }
+
+  getPinnedMessagePreview(message: ChatMessage): string {
+    if (message.text?.trim()) return message.text.trim();
+    if (message.photoid || message.photoPreviewUrl) return 'Photo';
+    if (message.fileid || message.filePreviewName) return 'File';
+    if (message.position) return 'Location';
+
+    return 'Message';
+  }
+
+  scrollToMessage(messageId: string): void {
+    this.isPinnedMessagesOpen = false;
+
+    requestAnimationFrame(() => {
+      const element = document.getElementById(this.getMessageElementId(messageId));
+
+      if (!element) return;
+
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      this.highlightedMessageId = String(messageId);
+      setTimeout(() => {
+        if (this.highlightedMessageId === String(messageId)) {
+          this.highlightedMessageId = '';
+        }
+      }, 1600);
+    });
+  }
+
+  getMessageElementId(messageId: string): string {
+    return `chat-message-${String(messageId).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  }
+
   shouldShowDateSeparator(index: number): boolean {
     if (index === 0) return true;
 
@@ -962,14 +1078,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     }
   }
 
-  private getRetryAfter(key: string): number {
-    return Number(localStorage.getItem(key) ?? 0);
-  }
-
-  private setRetryAfter(key: string, delayMs: number): void {
-    localStorage.setItem(key, String(Date.now() + delayMs));
-  }
-
   private getFailedPhotoIds(): string[] {
     const savedPhotoIds = localStorage.getItem(this.failedPhotoIdsKey);
 
@@ -988,6 +1096,41 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     if (failedPhotoIds.includes(photoid)) return;
 
     localStorage.setItem(this.failedPhotoIdsKey, JSON.stringify([...failedPhotoIds, photoid]));
+  }
+
+  private getSavedPinnedMessageIds(): string[] {
+    const savedIds = localStorage.getItem(this.getPinnedMessagesStorageKey());
+
+    if (!savedIds) return [];
+
+    try {
+      const parsedIds = JSON.parse(savedIds);
+
+      return Array.isArray(parsedIds) ? parsedIds.map(String) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private savePinnedMessageIds(): void {
+    localStorage.setItem(
+      this.getPinnedMessagesStorageKey(),
+      JSON.stringify(this.pinnedMessageIds),
+    );
+  }
+
+  private getPinnedMessagesStorageKey(): string {
+    const currentUserHash = this.authService.getCurrentUserHash() ?? 'anonymous';
+
+    return `${this.pinnedMessagesKey}_${currentUserHash}_${this.chatid}`;
+  }
+
+  private getRetryAfter(key: string): number {
+    return Number(localStorage.getItem(key) ?? 0);
+  }
+
+  private setRetryAfter(key: string, delayMs: number): void {
+    localStorage.setItem(key, String(Date.now() + delayMs));
   }
 
   private getDraftText(): string {
