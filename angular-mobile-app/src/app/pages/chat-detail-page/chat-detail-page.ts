@@ -64,7 +64,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly failedPhotoIdsKey = 'failed_photo_ids';
   private readonly pinnedMessagesKey = 'pinned_messages';
   private readonly longPressDurationMs = 400;
-  private readonly maxPhotoDimension = 1024;
   private readonly apiRetryDelayMs = 60000;
   private readonly messagePollingIntervalMs = 5000;
   private readonly messagePollingBackoffMs = 15000;
@@ -389,41 +388,9 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     const reader = new FileReader();
 
     reader.onload = () => {
-      const source = reader.result as string;
-      const image = new Image();
-
-      image.onload = () => {
-        const scale = Math.min(
-          1,
-          this.maxPhotoDimension / Math.max(image.naturalWidth, image.naturalHeight),
-        );
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-
-        const context = canvas.getContext('2d');
-
-        if (!context) {
-          this.actionMessage = 'The photo could not be converted to PNG.';
-          this.cdr.detectChanges();
-          return;
-        }
-
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        this.selectedPhotoBase64 = canvas.toDataURL('image/png');
-        this.isAttachmentMenuOpen = false;
-        this.actionMessage = '';
-        this.cdr.detectChanges();
-      };
-
-      image.onerror = () => {
-        this.selectedPhotoBase64 = '';
-        this.isAttachmentMenuOpen = false;
-        this.actionMessage = 'This photo format cannot be converted to PNG.';
-        this.cdr.detectChanges();
-      };
-
-      image.src = source;
+      this.selectedPhotoBase64 = reader.result as string;
+      this.isAttachmentMenuOpen = false;
+      this.cdr.detectChanges();
     };
 
     reader.readAsDataURL(file);
@@ -478,13 +445,9 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
     if (!video) return;
 
-    const scale = Math.min(
-      1,
-      this.maxPhotoDimension / Math.max(video.videoWidth, video.videoHeight),
-    );
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const context = canvas.getContext('2d');
 
