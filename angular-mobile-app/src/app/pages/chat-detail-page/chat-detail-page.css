@@ -24,6 +24,7 @@
 
 .back-button,
 .menu-button {
+  flex: 0 0 36px;
   border: none;
   background: transparent;
   color: #111;
@@ -205,6 +206,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.back-button mat-icon,
+.menu-button mat-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+
+  font-size: 24px;
+  line-height: 24px;
+  overflow: visible;
 }
 
 .small-icon-button mat-icon {
@@ -560,6 +572,7 @@
 
 .chat-menu-wrapper {
   position: relative;
+  flex: 0 0 36px;
 }
 
 .chat-menu {
