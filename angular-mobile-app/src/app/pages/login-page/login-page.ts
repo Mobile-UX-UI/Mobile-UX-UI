@@ -208,21 +208,25 @@ export class LoginPage {
 
   private handleAuthError(message: string): void {
     const normalizedMessage = message.toLowerCase();
+    let safeMessage = 'Login failed';
 
     if (normalizedMessage.includes('user') || normalizedMessage.includes('userid')) {
       this.setFieldError('userid', 'Invalid User ID');
+      safeMessage = 'Invalid User ID';
     } else if (
       normalizedMessage.includes('password') ||
       normalizedMessage.includes('credential') ||
       normalizedMessage.includes('login')
     ) {
-      this.setFieldError('password', 'Invalid password');
+      this.setFieldError('password', 'Wrong password');
+      safeMessage = 'Wrong password';
     } else {
       this.setFieldError('userid', 'Login data is invalid');
       this.setFieldError('password', 'Login data is invalid');
+      safeMessage = 'Login data is invalid';
     }
 
-    this.showError(message);
+    this.showError(safeMessage);
   }
 
   private setFieldError(fieldName: 'userid' | 'password', message: string): void {

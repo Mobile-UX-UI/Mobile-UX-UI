@@ -61,9 +61,10 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private readonly chatReadStateKey = 'chat_read_state';
   private readonly cachedChatsKey = 'cached_chats';
   private readonly chatApiRetryAfterKey = 'chat_api_retry_after';
-  private readonly failedPhotoIdsKey = 'failed_photo_ids';
+  private readonly legacyFailedPhotoIdsKey = 'failed_photo_ids';
   private readonly pinnedMessagesKey = 'pinned_messages';
   private readonly longPressDurationMs = 400;
+  private readonly maxGalleryPhotoDimension = 800;
   private readonly apiRetryDelayMs = 60000;
   private readonly messagePollingIntervalMs = 5000;
   private readonly messagePollingBackoffMs = 15000;
@@ -77,6 +78,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   private isMessageRequestInFlight = false;
   private nextMessagePollAt = 0;
   private messagePollingTimer?: number;
+  private unavailablePhotoIds = new Set<string>();
   private longPressTimer?: ReturnType<typeof setTimeout>;
   private longPressPointerId?: number;
   private longPressStartX = 0;
@@ -96,6 +98,8 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   isCameraOpen = false;
   isAttachmentMenuOpen = false;
+  cameraFacingMode: 'user' | 'environment' = 'environment';
+  isSwitchingCamera = false;
 
   isChatMenuOpen = false;
   isMembersListOpen = false;
@@ -108,6 +112,7 @@ export class ChatDetailPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.chatid = this.route.snapshot.paramMap.get('chatid') ?? '';
+    localStorage.removeItem(this.legacyFailedPhotoIdsKey);
     this.pinnedMessageIds = this.getSavedPinnedMessageIds();
     this.newMessageText = this.getDraftText();
     this.loadChat();
@@ -190,11 +195,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
       next: (response) => {
         this.nextMessagePollAt = 0;
         this.messages = this.withPendingMessages([...(response.messages ?? [])]);
-        console.log(
-          'Saving messages under key:',
-          this.getCachedMessagesKey(),
-          response.messages?.length ?? 0,
-        );
 
         localStorage.setItem(
           this.getCachedMessagesKey(),
@@ -324,10 +324,12 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   }
 
   loadPhotos(): void {
-    const failedPhotoIds = this.getFailedPhotoIds();
-
     for (const message of this.messages) {
-      if (!message.photoid || this.photoUrls[message.photoid] || failedPhotoIds.includes(message.photoid)) {
+      if (
+        !message.photoid ||
+        this.photoUrls[message.photoid] ||
+        this.unavailablePhotoIds.has(message.photoid)
+      ) {
         continue;
       }
 
@@ -340,11 +342,11 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   }
 
   isPhotoUnavailable(photoid: string): boolean {
-    return this.getFailedPhotoIds().includes(photoid);
+    return this.unavailablePhotoIds.has(photoid);
   }
 
   markPhotoUnavailable(photoid: string): void {
-    this.saveFailedPhotoId(photoid);
+    this.unavailablePhotoIds.add(photoid);
     delete this.photoUrls[photoid];
     this.cdr.detectChanges();
   }
@@ -388,9 +390,40 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     const reader = new FileReader();
 
     reader.onload = () => {
-      this.selectedPhotoBase64 = reader.result as string;
-      this.isAttachmentMenuOpen = false;
-      this.cdr.detectChanges();
+      const image = new Image();
+
+      image.onload = () => {
+        const scale = Math.min(
+          1,
+          this.maxGalleryPhotoDimension / Math.max(image.naturalWidth, image.naturalHeight),
+        );
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+        const context = canvas.getContext('2d');
+
+        if (!context) {
+          this.actionMessage = 'The photo could not be prepared.';
+          this.cdr.detectChanges();
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        this.selectedPhotoBase64 = canvas.toDataURL('image/png');
+        this.isAttachmentMenuOpen = false;
+        this.actionMessage = '';
+        this.cdr.detectChanges();
+      };
+
+      image.onerror = () => {
+        this.selectedPhotoBase64 = '';
+        this.isAttachmentMenuOpen = false;
+        this.actionMessage = 'This photo format is not supported.';
+        this.cdr.detectChanges();
+      };
+
+      image.src = reader.result as string;
     };
 
     reader.readAsDataURL(file);
@@ -419,25 +452,56 @@ export class ChatDetailPage implements OnInit, OnDestroy {
   async openCamera(): Promise<void> {
     try {
       this.isAttachmentMenuOpen = false;
-
-      this.cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-        },
-        audio: false,
-      });
-
-      this.isCameraOpen = true;
-      this.cdr.detectChanges();
-
-      setTimeout(() => {
-        if (this.cameraPreview?.nativeElement && this.cameraStream) {
-          this.cameraPreview.nativeElement.srcObject = this.cameraStream;
-        }
-      }, 0);
+      this.cameraFacingMode = 'environment';
+      await this.startCameraStream();
     } catch (error: unknown) {
       console.error('Camera access error:', error);
     }
+  }
+
+  async switchCamera(): Promise<void> {
+    if (this.isSwitchingCamera) return;
+
+    const previousFacingMode = this.cameraFacingMode;
+    this.cameraFacingMode = previousFacingMode === 'environment' ? 'user' : 'environment';
+    this.isSwitchingCamera = true;
+
+    try {
+      await this.startCameraStream();
+    } catch (error: unknown) {
+      console.error('Camera switch error:', error);
+      this.cameraFacingMode = previousFacingMode;
+
+      try {
+        await this.startCameraStream();
+      } catch (restoreError: unknown) {
+        console.error('Camera restore error:', restoreError);
+        this.closeCamera();
+      }
+    } finally {
+      this.isSwitchingCamera = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private async startCameraStream(): Promise<void> {
+    this.cameraStream?.getTracks().forEach((track) => track.stop());
+
+    this.cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: this.cameraFacingMode,
+      },
+      audio: false,
+    });
+
+    this.isCameraOpen = true;
+    this.cdr.detectChanges();
+
+    setTimeout(() => {
+      if (this.cameraPreview?.nativeElement && this.cameraStream) {
+        this.cameraPreview.nativeElement.srcObject = this.cameraStream;
+      }
+    }, 0);
   }
 
   takePhoto(): void {
@@ -1080,26 +1144,6 @@ export class ChatDetailPage implements OnInit, OnDestroy {
     } catch {
       return [];
     }
-  }
-
-  private getFailedPhotoIds(): string[] {
-    const savedPhotoIds = localStorage.getItem(this.failedPhotoIdsKey);
-
-    if (!savedPhotoIds) return [];
-
-    try {
-      return JSON.parse(savedPhotoIds) as string[];
-    } catch {
-      return [];
-    }
-  }
-
-  private saveFailedPhotoId(photoid: string): void {
-    const failedPhotoIds = this.getFailedPhotoIds();
-
-    if (failedPhotoIds.includes(photoid)) return;
-
-    localStorage.setItem(this.failedPhotoIdsKey, JSON.stringify([...failedPhotoIds, photoid]));
   }
 
   private getSavedPinnedMessageIds(): string[] {

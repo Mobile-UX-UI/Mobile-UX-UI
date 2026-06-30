@@ -276,6 +276,16 @@
             Close
           </button>
 
+          <button
+            type="button"
+            class="camera-button camera-switch-button"
+            aria-label="Switch camera"
+            [disabled]="isSwitchingCamera"
+            (click)="switchCamera()"
+          >
+            <mat-icon>flip_camera_ios</mat-icon>
+          </button>
+
           <button type="button" class="camera-button primary" (click)="takePhoto()">
             Take photo
           </button>
