@@ -211,3 +211,7 @@ Deploy:
 cd angular-mobile-app
 npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser --repo=https://github.com/mobile-ux-ui/Mobile-UX-UI.git --branch=gh-pages
 ```
+
+##Latest Version
+https://mobile-ux-ui.github.io/Mobile-UX-UI/?v=17
+
