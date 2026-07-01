@@ -4,6 +4,12 @@
 DavaiChat is a mobile-first chat application designed with a strong focus on user experience (UX) and user interface (UI).  
 The project includes an interactive prototype created in Figma as well as a frontend implementation using Angular.
 
+## Latest Version
+
+The latest deployed version is available at:
+
+https://diana08072.github.io/Mobile-UX-UI/?v=17
+
 ## Prototype (Figma)
 You can explore the UI/UX prototype here:  
 https://www.figma.com/design/3BZLHzES0eBRvEAKZJOD2f
@@ -26,24 +32,19 @@ node -v
 npm -v
 ```
 
-### 3. Install Angular CLI globally
-```bash
-npm install -g @angular/cli
-```
-
-### 4. Navigate to project folder
+### 3. Navigate to the Angular project
 ```bash
 cd angular-mobile-app
 ```
 
-### 5. Install dependencies
+### 4. Install dependencies
 ```bash
 npm install
 ```
 
-### 6. Run the application
+### 5. Run the application
 ```bash
-ng serve
+npm start
 ```
 
 The application will be available at:
@@ -106,40 +107,59 @@ angular-mobile-app/dist/angular-mobile-app/browser
 
 ## GitHub Pages Deployment
 
-This project can be deployed to GitHub Pages using `angular-cli-ghpages`, which is already included in the project dependencies.
+This project uses `angular-cli-ghpages`, which is included in the development dependencies.
 
-### 1. Build with correct base href
+### Deploy this repository
 
-For this repository, the GitHub Pages base path is:
-
-```bash
-/Mobile-UX-UI/
-```
-
-Build the app with:
+Run the following commands from the repository root:
 
 ```bash
 cd angular-mobile-app
+npm install
 npx ng build --configuration production --base-href=/Mobile-UX-UI/
+npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser
 ```
 
-### 2. Deploy to GitHub Pages
+The deployment tool publishes the build output to the `gh-pages` branch of the Git repository configured as `origin`.
+
+### Deploy your own fork
+
+1. Fork this repository on GitHub.
+2. Clone your fork instead of the original repository.
+3. Check that `origin` points to your fork:
 
 ```bash
-npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser --repo=https://github.com/mobile-ux-ui/Mobile-UX-UI.git --branch=gh-pages
+git remote -v
 ```
 
-This publishes the build output to the `gh-pages` branch of the `mobile-ux-ui/Mobile-UX-UI` organization repository. You need write access to that repository.
+4. If your repository has a different name, use that name in the base href:
 
-### 3. GitHub Pages settings
+```bash
+npx ng build --configuration production --base-href=/<repository-name>/
+npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser
+```
 
-In GitHub, open the repository settings:
+For example, a repository named `my-chat-app` requires:
+
+```bash
+npx ng build --configuration production --base-href=/my-chat-app/
+```
+
+The resulting URL follows this format:
+
+```text
+https://<github-username>.github.io/<repository-name>/
+```
+
+### GitHub Pages settings
+
+In GitHub, open:
 
 ```text
 Settings -> Pages
 ```
 
-Use:
+Configure:
 
 ```text
 Source: Deploy from a branch
@@ -147,19 +167,15 @@ Branch: gh-pages
 Folder: / (root)
 ```
 
-The deployed app is available at:
+The deployed version of this repository is available at:
+
+https://diana08072.github.io/Mobile-UX-UI/
+
+If an older cached version appears, add or increase a cache parameter:
 
 ```text
-https://mobile-ux-ui.github.io/Mobile-UX-UI/
+https://diana08072.github.io/Mobile-UX-UI/?v=17
 ```
-
-If the browser still shows an older version after deployment, add a cache parameter:
-
-```text
-https://mobile-ux-ui.github.io/Mobile-UX-UI/?v=2
-```
-
-Increase the number after each deployment, for example `?v=3`, `?v=4`, etc.
 
 ## Updating the Deployed Version
 
@@ -176,7 +192,7 @@ Then deploy the updated app:
 ```bash
 cd angular-mobile-app
 npx ng build --configuration production --base-href=/Mobile-UX-UI/
-npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser --repo=https://github.com/mobile-ux-ui/Mobile-UX-UI.git --branch=gh-pages
+npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser
 ```
 
 The `main` branch contains the source code.  
@@ -188,7 +204,7 @@ Run locally:
 
 ```bash
 cd angular-mobile-app
-ng serve
+npm start
 ```
 
 Build:
@@ -209,5 +225,5 @@ Deploy:
 
 ```bash
 cd angular-mobile-app
-npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser --repo=https://github.com/mobile-ux-ui/Mobile-UX-UI.git --branch=gh-pages
+npx angular-cli-ghpages --dir=dist/angular-mobile-app/browser
 ```
